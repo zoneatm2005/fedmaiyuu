@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Our Love Story - ความทรงจำวันครบรอบสุดน่ารัก 💕</title>
+  <title>ความทรงจำ</title>
   <meta name="description" content="เว็บไซต์บันทึกความทรงจำวันครบรอบและอัลบั้มรูปภาพสุดน่ารักสำหรับคู่รัก">
   <link rel="stylesheet" href="styles.css">
   <!-- FontAwesome Icons -->
@@ -12,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
+
 <body>
 
   <!-- Floating Hearts Background Canvas -->
@@ -25,16 +27,16 @@
       <div class="lock-icon-wrapper">
         💖
       </div>
-      <h1 class="lock-title">Our Special Date</h1>
-      <p class="lock-subtitle">ใส่วันที่เราครบกันเพื่อปลดล็อกความหวานนะจ๊ะ ✨</p>
+      <h1 class="lock-title">Freshmaiyuu</h1>
+      <p class="lock-subtitle">ใส่วันที่เราครบกันเพื่อปลดล็อกความหวานนะคะ</p>
 
       <form id="lock-form" onsubmit="return false;">
         <div class="date-input-container">
           <input type="date" id="anniversary-pass-input" class="date-picker-styled" value="2026-08-02" required>
         </div>
-        
+
         <button type="submit" id="unlock-btn" class="btn btn-primary" style="width: 100%;">
-          <i class="fa-solid fa-heart"></i> ปลดล็อกหัวใจ (02/08/2026)
+          <i class="fa-solid fa-heart"></i> ปลดล็อกหัวใจ
         </button>
       </form>
 
@@ -42,7 +44,7 @@
         <i class="fa-regular fa-lightbulb"></i> คำใบ้รหัสผ่าน
       </p>
       <p id="hint-text" style="display: none; margin-top: 8px; font-size: 0.88rem; color: var(--primary);">
-        💡 รหัสผ่านตั้งต้นคือวันที่ <b>02/08/2026</b> (2 สิงหาคม 2026)
+        รหัสผ่านตั้งต้นคือวันที่ <b>วันที่เราคบกัน</b>
       </p>
     </div>
   </div>
@@ -51,7 +53,7 @@
        2. MAIN DASHBOARD CONTENT
        ========================================================================== -->
   <div class="app-container" id="main-content">
-    
+
     <!-- Top Header Bar -->
     <header class="header-bar">
       <div class="logo-group">
@@ -63,7 +65,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="controls-group">
         <!-- Lock Button -->
         <button id="lock-app-btn" class="btn btn-secondary btn-icon" title="ล็อคหน้าจอ">
@@ -99,7 +101,7 @@
       </div>
 
       <div class="quote-box" id="daily-quote">
-        "ทุกวินาทีที่มีเธอ คือช่วงเวลาที่ดีที่สุดในชีวิต ✨"
+        "มีเธอคือช่วงเวลาที่ดีที่สุดในชีวิต"
       </div>
     </section>
 
@@ -181,7 +183,8 @@
 
       <form id="upload-form" onsubmit="return false;">
         <div class="upload-dropzone" id="dropzone">
-          <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px;"></i>
+          <i class="fa-solid fa-cloud-arrow-up"
+            style="font-size: 2.5rem; color: var(--primary); margin-bottom: 10px;"></i>
           <p style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--text-dark);">
             คลิกเพื่อเลือกรูป หรือ ลากรูปมาวางที่นี่
           </p>
@@ -195,13 +198,15 @@
 
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <div>
-            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">หัวข้อความทรงจำ</label>
+            <label
+              style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">หัวข้อความทรงจำ</label>
             <input type="text" id="photo-title-input" placeholder="เช่น ไปเที่ยวทะเลด้วยกันครั้งแรก 🌊" required>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div>
-              <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">วันที่ของรูปภาพ</label>
+              <label
+                style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">วันที่ของรูปภาพ</label>
               <input type="date" id="photo-date-input" required>
             </div>
             <div>
@@ -216,7 +221,8 @@
           </div>
 
           <div>
-            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">ข้อความความทรงจำ (Caption)</label>
+            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">ข้อความความทรงจำ
+              (Caption)</label>
             <textarea id="photo-caption-input" rows="3" placeholder="เขียนข้อความความรู้สึกหวานๆ..."></textarea>
           </div>
 
@@ -236,8 +242,11 @@
       <button class="modal-close" id="close-lightbox-modal">&times;</button>
       <img id="lightbox-img" class="lightbox-img" src="" alt="Full Memory">
       <h2 id="lightbox-title" style="color: var(--text-dark); margin-bottom: 6px;"></h2>
-      <p id="lightbox-date" style="color: var(--primary); font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;"></p>
-      <p id="lightbox-caption" style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.5; background: #fdf2f4; padding: 12px; border-radius: 12px;"></p>
+      <p id="lightbox-date" style="color: var(--primary); font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">
+      </p>
+      <p id="lightbox-caption"
+        style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.5; background: #fdf2f4; padding: 12px; border-radius: 12px;">
+      </p>
     </div>
   </div>
 
@@ -246,4 +255,5 @@
   <!-- App Script -->
   <script src="app.js"></script>
 </body>
+
 </html>

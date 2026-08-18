@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- DEFAULT STATE & STORAGE CONFIG ---
   const DEFAULT_ANNIVERSARY_DATE = '2026-08-02'; // รหัสผ่านวันครบรอบตั้งต้น: 02/08/2026
   const DEFAULT_COUPLE_NAMES = 'You & Me 💕';
+  const IMGBB_API_KEY = '2855f6e88ea6637643a68de851842e49'; // ImgBB Cloud Storage API Key
 
   let config = {
     anniversaryDate: localStorage.getItem('love_anniversary_date') || DEFAULT_ANNIVERSARY_DATE,
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     unlocked: sessionStorage.getItem('love_unlocked') === 'true'
   };
 
-  // --- INITIAL SAMPLE PHOTOS (High Quality Romantic Visuals) ---
+  // --- INITIAL SAMPLE PHOTOS (High Quality Romantic Canvas Visuals) ---
   const DEFAULT_PHOTOS = [
     {
       id: 'photo-1',
@@ -23,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
       date: '2026-08-02',
       category: 'First Date',
       caption: 'วันแรกที่เราตกลงคบกัน บรรยากาศอบอุ่น รอยยิ้มของเธอน่ารักที่สุดเลย ❤️',
-      imageSrc: createCuteSvgDataUrl('☕', 'First Date Cafe', '#ffb3c6', '#ff85a1')
+      imageSrc: createCuteCanvasDataUrl('☕', 'First Date Cafe', '#ffb3c6', '#ff85a1')
     },
     {
       id: 'photo-2',
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       date: '2026-08-10',
       category: 'Trips',
       caption: 'ลมทะเลเย็นๆ กับมือที่จับกันไว้ ไม่เคยรู้สึกมีความสุขขนาดนี้มาก่อน',
-      imageSrc: createCuteSvgDataUrl('🌊', 'Sunset Beach Trip', '#a2d2ff', '#bde0fe')
+      imageSrc: createCuteCanvasDataUrl('🌊', 'Sunset Beach Trip', '#a2d2ff', '#bde0fe')
     },
     {
       id: 'photo-3',
@@ -39,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
       date: '2026-08-15',
       category: 'Cute',
       caption: 'แอบถ่ายรูปเธอตอนกินขนม น่ารักจนต้องบันทึกไว้ในความทรงจำ 🍓',
-      imageSrc: createCuteSvgDataUrl('🐱', 'Sweet Cute Moments', '#ffc8dd', '#ffafcc')
+      imageSrc: createCuteCanvasDataUrl('🐱', 'Sweet Cute Moments', '#ffc8dd', '#ffafcc')
     }
   ];
 
@@ -51,10 +52,18 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(e);
   }
 
-  let photos = (Array.isArray(savedPhotos) && savedPhotos.length > 0) ? savedPhotos : DEFAULT_PHOTOS;
-  if (!savedPhotos || savedPhotos.length === 0) {
-    try { localStorage.setItem('love_photos', JSON.stringify(DEFAULT_PHOTOS)); } catch(e) {}
+  // Force update any sample SVG photos in localStorage to clean PNG Canvas URLs
+  let photos = DEFAULT_PHOTOS;
+  if (Array.isArray(savedPhotos) && savedPhotos.length > 0) {
+    photos = savedPhotos.map(p => {
+      if (p.id === 'photo-1') p.imageSrc = DEFAULT_PHOTOS[0].imageSrc;
+      if (p.id === 'photo-2') p.imageSrc = DEFAULT_PHOTOS[1].imageSrc;
+      if (p.id === 'photo-3') p.imageSrc = DEFAULT_PHOTOS[2].imageSrc;
+      return p;
+    });
   }
+
+  try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch(e) {}
 
   let bucketList = JSON.parse(localStorage.getItem('love_bucket')) || [
     { id: 'b1', text: 'ไปดูพระอาทิตย์ตกที่ทะเลด้วยกัน 🌅', completed: true },
@@ -133,6 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGallery();
     renderTimeline();
     renderBucketList();
+
+    // Start Online Realtime Cloud Data Sync
+    syncFromCloud();
+    setInterval(syncFromCloud, 5000); // Check for updates from partner every 5 seconds
 
     // Init Floating Canvas Hearts Animation
     initHeartsCanvas();
@@ -379,7 +392,29 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.readAsDataURL(file);
   }
 
-  uploadForm.addEventListener('submit', (e) => {
+  async function uploadImageToCloud(base64Data) {
+    if (!IMGBB_API_KEY) return base64Data;
+    try {
+      const formData = new FormData();
+      const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+      formData.append('image', cleanBase64);
+
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      if (result && result.success && result.data && result.data.url) {
+        return result.data.url; // Returns permanent HTTPS Cloud Image URL!
+      }
+    } catch (e) {
+      console.error('ImgBB cloud upload error:', e);
+    }
+    return base64Data;
+  }
+
+  uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const title = document.getElementById('photo-title-input').value.trim();
@@ -392,19 +427,34 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    const submitBtn = uploadForm.querySelector('button[type="submit"]');
+    const originalBtnContent = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce"></i> กำลังส่งรูปขึ้นคลาวด์ออนไลน์...';
+
+    let cloudImageUrl = activePhotoDataUrl;
+    try {
+      cloudImageUrl = await uploadImageToCloud(activePhotoDataUrl);
+    } catch (err) {
+      console.warn('Cloud upload fallback:', err);
+    }
+
     const newPhoto = {
       id: 'photo-' + Date.now(),
       title: title || 'ความทรงจำของเรา',
       date: date || new Date().toISOString().split('T')[0],
       category: category,
       caption: caption || 'บันทึกความรู้สึกหวานๆ 💕',
-      imageSrc: activePhotoDataUrl
+      imageSrc: cloudImageUrl
     };
 
     photos.unshift(newPhoto); // Add to top
     savePhotos();
     renderGallery();
     renderTimeline();
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalBtnContent;
 
     uploadModal.classList.remove('active');
     resetUploadForm();
@@ -427,12 +477,71 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline();
   }
 
+  // --- REALTIME CLOUD DATA SYNC ENGINE ---
+  const CLOUD_SYNC_ENDPOINT = 'https://fedmaiyuu-love-default-rtdb.firebaseio.com/app_sync.json';
+  let isCloudSaving = false;
+
+  async function syncFromCloud() {
+    if (isCloudSaving) return;
+    try {
+      const res = await fetch(CLOUD_SYNC_ENDPOINT);
+      if (res.ok) {
+        const data = await res.json();
+        if (data) {
+          if (Array.isArray(data.photos) && JSON.stringify(data.photos) !== JSON.stringify(photos)) {
+            photos = data.photos;
+            try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
+            renderGallery();
+            renderTimeline();
+          }
+          if (Array.isArray(data.bucketList) && JSON.stringify(data.bucketList) !== JSON.stringify(bucketList)) {
+            bucketList = data.bucketList;
+            try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) {}
+            renderBucketList();
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud sync fetch warning:', e);
+    }
+  }
+
+  async function pushToCloud() {
+    isCloudSaving = true;
+    try {
+      const payload = {
+        photos: photos,
+        bucketList: bucketList,
+        lastUpdated: Date.now()
+      };
+      await fetch(CLOUD_SYNC_ENDPOINT, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('Cloud sync push warning:', e);
+    } finally {
+      setTimeout(() => { isCloudSaving = false; }, 1500);
+    }
+  }
+
   function savePhotos() {
     try {
       localStorage.setItem('love_photos', JSON.stringify(photos));
     } catch (err) {
       console.warn('LocalStorage limit:', err);
     }
+    pushToCloud();
+  }
+
+  function saveBucketList() {
+    try {
+      localStorage.setItem('love_bucket', JSON.stringify(bucketList));
+    } catch (err) {
+      console.warn('LocalStorage limit:', err);
+    }
+    pushToCloud();
   }
 
   // Lightbox Modal
@@ -523,10 +632,6 @@ document.addEventListener('DOMContentLoaded', () => {
       renderBucketList();
     }
   });
-
-  function saveBucketList() {
-    localStorage.setItem('love_bucket', JSON.stringify(bucketList));
-  }
 
   // ==========================================================================
   // 5. NAVIGATION & SETTINGS
@@ -642,24 +747,37 @@ document.addEventListener('DOMContentLoaded', () => {
     return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  function createCuteSvgDataUrl(emoji, label, color1, color2) {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
-      <defs>
-        <linearGradient id="g_${Math.random().toString(36).substring(2)}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${color1}" stop-opacity="0.95" />
-          <stop offset="100%" stop-color="${color2}" stop-opacity="0.95" />
-        </linearGradient>
-      </defs>
-      <rect width="600" height="450" fill="${color1}" />
-      <circle cx="300" cy="200" r="95" fill="white" opacity="0.35" />
-      <text x="300" y="225" font-size="90" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
-      <text x="300" y="340" font-family="sans-serif" font-size="28" font-weight="bold" fill="white" text-anchor="middle">${label}</text>
-    </svg>`;
-    try {
-      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-    } catch(e) {
-      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    }
+  function createCuteCanvasDataUrl(emoji, label, color1, color2) {
+    const cvs = document.createElement('canvas');
+    cvs.width = 600;
+    cvs.height = 450;
+    const ctx = cvs.getContext('2d');
+
+    // Linear Gradient Background
+    const grad = ctx.createLinearGradient(0, 0, 600, 450);
+    grad.addColorStop(0, color1);
+    grad.addColorStop(1, color2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 600, 450);
+
+    // Decorative White Circles
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.beginPath();
+    ctx.arc(300, 190, 95, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Emoji Icon
+    ctx.font = '85px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 300, 190);
+
+    // Label Text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillText(label, 300, 340);
+
+    return cvs.toDataURL('image/png');
   }
 
   // RUN APP!
