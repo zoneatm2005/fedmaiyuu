@@ -58,6 +58,20 @@ document.addEventListener('DOMContentLoaded', () => {
   let bucketList = Array.isArray(savedBucket) ? savedBucket : [];
   try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch(e) {}
 
+  // --- TRACK DELETED ITEMS TO PREVENT RE-SYNC RESTORATION ---
+  let deletedPhotoIds = [];
+  try {
+    const rawDP = localStorage.getItem('love_deleted_photos');
+    if (rawDP) deletedPhotoIds = JSON.parse(rawDP);
+  } catch (e) {}
+
+  let deletedBucketIds = [];
+  try {
+    const rawDB = localStorage.getItem('love_deleted_bucket');
+    if (rawDB) deletedBucketIds = JSON.parse(rawDB);
+  } catch (e) {}
+
+
   // --- DOM ELEMENTS ---
   const lockScreen = document.getElementById('lock-screen');
   const lockForm = document.getElementById('lock-form');
@@ -495,12 +509,27 @@ document.addEventListener('DOMContentLoaded', () => {
     previewImg.src = '';
   }
 
-  function deletePhoto(id) {
+  async function deletePhoto(id) {
+    if (!deletedPhotoIds.includes(id)) {
+      deletedPhotoIds.push(id);
+      try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e) {}
+    }
+
     photos = photos.filter(p => p.id !== id);
     renderGallery();
     renderTimeline();
-    savePhotos();
-    showToast('ลบรูปภาพเรียบร้อยแล้ว', 'info');
+
+    // Explicitly delete from Supabase love_memories table
+    if (supabase) {
+      try {
+        await supabase.from('love_memories').delete().eq('id', String(id));
+      } catch (err) {
+        console.warn('Supabase delete photo error:', err);
+      }
+    }
+
+    await savePhotos();
+    showToast('ลบรูปภาพเรียบร้อยแล้ว 🗑️', 'info');
   }
 
   // --- SUPABASE REALTIME CLOUD DATA SYNC ENGINE ---
@@ -585,17 +614,21 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(err) {}
       }
 
-      // --- SMART MERGE: DO NOT ERASE LOCAL UNPERSISTED ITEMS ---
+      // --- SMART MERGE: FILTER OUT DELETED ITEMS & PRESERVE UNPERSISTED ADDITIONS ---
       let updated = false;
 
       if (Array.isArray(cloudPhotos)) {
-        const cleanCloudPhotos = cloudPhotos.filter(p => p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3');
-        // Smart merge by ID: keep local items if not present in cloud yet
+        const cleanCloudPhotos = cloudPhotos.filter(p => 
+          p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3' &&
+          !deletedPhotoIds.includes(p.id)
+        );
+
+        // Keep local active photos (ignoring deleted ones)
+        const activeLocalPhotos = photos.filter(p => !deletedPhotoIds.includes(p.id));
+
         const mergedPhotosMap = new Map();
-        // Add cloud photos first
         cleanCloudPhotos.forEach(p => mergedPhotosMap.set(p.id, p));
-        // Add local photos (preserving recent additions)
-        photos.forEach(p => {
+        activeLocalPhotos.forEach(p => {
           if (!mergedPhotosMap.has(p.id)) {
             mergedPhotosMap.set(p.id, p);
           }
@@ -612,10 +645,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (Array.isArray(cloudBucket)) {
-        const cleanCloudBucket = cloudBucket.filter(b => b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4');
+        const cleanCloudBucket = cloudBucket.filter(b => 
+          b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4' &&
+          !deletedBucketIds.includes(b.id)
+        );
+
+        const activeLocalBucket = bucketList.filter(b => !deletedBucketIds.includes(b.id));
+
         const mergedBucketMap = new Map();
         cleanCloudBucket.forEach(b => mergedBucketMap.set(b.id, b));
-        bucketList.forEach(b => {
+        activeLocalBucket.forEach(b => {
           if (!mergedBucketMap.has(b.id)) {
             mergedBucketMap.set(b.id, b);
           }
@@ -850,11 +889,27 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const delBtn = el.querySelector('.delete-bucket');
-      delBtn.addEventListener('click', (e) => {
+      delBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        const itemToDelete = bucketList[index];
+        if (itemToDelete) {
+          const targetId = itemToDelete.id;
+          if (!deletedBucketIds.includes(targetId)) {
+            deletedBucketIds.push(targetId);
+            try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e) {}
+          }
+          if (supabase) {
+            try {
+              await supabase.from('love_bucket').delete().eq('id', String(targetId));
+            } catch (err) {
+              console.warn('Supabase delete bucket item error:', err);
+            }
+          }
+        }
         bucketList.splice(index, 1);
         renderBucketList();
-        saveBucketList();
+        await saveBucketList();
+        showToast('ลบรายการบักเก็ตลิสต์เรียบร้อยแล้ว 🗑️', 'info');
       });
 
       bucketListContainer.appendChild(el);
