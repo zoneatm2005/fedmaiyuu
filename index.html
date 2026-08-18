@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="styles.css">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase SDK Compatibility Version for Simple Online Sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
 <body>
 
@@ -23,7 +26,7 @@
         💖
       </div>
       <h1 class="lock-title">Our Special Date</h1>
-      <p class="lock-subtitle">ใส่วันที่ที่เราครบกันเพื่อปลดล็อกความหวานนะจ๊ะ ✨</p>
+      <p class="lock-subtitle">ใส่วันที่เราครบกันเพื่อปลดล็อกความหวานนะจ๊ะ ✨</p>
 
       <form id="lock-form" onsubmit="return false;">
         <div class="date-input-container">
@@ -53,28 +56,15 @@
     <header class="header-bar">
       <div class="logo-group">
         <span class="logo-heart">🌸</span>
-        <span class="logo-text">Our Love Memory</span>
+        <div>
+          <span class="logo-text">Our Love Memory</span>
+          <div id="cloud-sync-status" style="font-size: 0.75rem; color: #2e7d32; font-weight: 500; margin-top: 2px;">
+            <i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #4caf50;"></i> ออนไลน์ซิงก์เรียลไทม์
+          </div>
+        </div>
       </div>
       
       <div class="controls-group">
-        <!-- Background Music Toggle -->
-        <button id="music-btn" class="btn btn-secondary btn-icon" title="เปิด/ปิด เพลงบรรเลงหวานๆ">
-          <i class="fa-solid fa-music"></i>
-        </button>
-
-        <!-- Theme Selector -->
-        <select id="theme-select" class="theme-selector">
-          <option value="default">🌸 ซากุระ</option>
-          <option value="peach">🍑 พีชหวาน</option>
-          <option value="lavender">🪻 ลาเวนเดอร์</option>
-          <option value="mint">🌿 มินต์สดใส</option>
-        </select>
-
-        <!-- Settings Button -->
-        <button id="settings-btn" class="btn btn-secondary btn-icon" title="ตั้งค่าวันครบรอบ">
-          <i class="fa-solid fa-gear"></i>
-        </button>
-
         <!-- Lock Button -->
         <button id="lock-app-btn" class="btn btn-secondary btn-icon" title="ล็อคหน้าจอ">
           <i class="fa-solid fa-lock"></i>
@@ -186,7 +176,7 @@
     <div class="modal-box">
       <button class="modal-close" id="close-upload-modal">&times;</button>
       <h2 style="margin-bottom: 18px; color: var(--primary); text-align: center;">
-        📸 เพิ่มรูปภาพความทรงจำใหม่
+        📸 เพิ่มรูปภาพความทรงจำใหม่ (ซิงก์ออนไลน์)
       </h2>
 
       <form id="upload-form" onsubmit="return false;">
@@ -231,7 +221,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary" style="margin-top: 10px; width: 100%;">
-            <i class="fa-solid fa-heart"></i> บันทึกความทรงจำนี้
+            <i class="fa-solid fa-cloud-arrow-up"></i> บันทึก & แชร์ขึ้นคลาวด์ออนไลน์
           </button>
         </div>
       </form>
@@ -251,32 +241,7 @@
     </div>
   </div>
 
-  <!-- ==========================================================================
-       MODAL 3: SETTINGS MODAL
-       ========================================================================== -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-box">
-      <button class="modal-close" id="close-settings-modal">&times;</button>
-      <h2 style="margin-bottom: 18px; color: var(--primary); text-align: center;">
-        ⚙️ ตั้งค่าข้อมูลวันครบรอบ
-      </h2>
-      <form id="settings-form" onsubmit="return false;">
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-          <div>
-            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">ชื่อคู่รัก</label>
-            <input type="text" id="setting-names-input" value="You & Me 💕" required>
-          </div>
-          <div>
-            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">วันครบรอบ (ใช้เป็นรหัสผ่านด้วย)</label>
-            <input type="date" id="setting-date-input" value="2026-08-02" required>
-          </div>
-          <button type="submit" class="btn btn-primary" style="margin-top: 10px; width: 100%;">
-            <i class="fa-solid fa-floppy-disk"></i> บันทึกการตั้งค่า
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+
 
   <!-- App Script -->
   <script src="app.js"></script>

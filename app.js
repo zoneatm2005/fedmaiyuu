@@ -43,7 +43,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   ];
 
-  let photos = JSON.parse(localStorage.getItem('love_photos')) || DEFAULT_PHOTOS;
+  let savedPhotos = null;
+  try {
+    const raw = localStorage.getItem('love_photos');
+    if (raw) savedPhotos = JSON.parse(raw);
+  } catch (e) {
+    console.error(e);
+  }
+
+  let photos = (Array.isArray(savedPhotos) && savedPhotos.length > 0) ? savedPhotos : DEFAULT_PHOTOS;
+  if (!savedPhotos || savedPhotos.length === 0) {
+    try { localStorage.setItem('love_photos', JSON.stringify(DEFAULT_PHOTOS)); } catch(e) {}
+  }
+
   let bucketList = JSON.parse(localStorage.getItem('love_bucket')) || [
     { id: 'b1', text: 'ไปดูพระอาทิตย์ตกที่ทะเลด้วยกัน 🌅', completed: true },
     { id: 'b2', text: 'ใส่เสื้อคู่ไปเที่ยวงานเทศกาล 🎡', completed: false },
@@ -66,10 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cntMinutes = document.getElementById('cnt-minutes');
   const cntSeconds = document.getElementById('cnt-seconds');
 
-  const themeSelect = document.getElementById('theme-select');
-  const musicBtn = document.getElementById('music-btn');
   const lockAppBtn = document.getElementById('lock-app-btn');
-  const settingsBtn = document.getElementById('settings-btn');
 
   const galleryGrid = document.getElementById('gallery-grid');
   const filterChips = document.querySelectorAll('.filter-chip');
@@ -93,12 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const lightboxDate = document.getElementById('lightbox-date');
   const lightboxCaption = document.getElementById('lightbox-caption');
 
-  const settingsModal = document.getElementById('settings-modal');
-  const closeSettingsModal = document.getElementById('close-settings-modal');
-  const settingsForm = document.getElementById('settings-form');
-  const settingNamesInput = document.getElementById('setting-names-input');
-  const settingDateInput = document.getElementById('setting-date-input');
-
   const bucketListContainer = document.getElementById('bucket-list-container');
   const addBucketBtn = document.getElementById('add-bucket-btn');
 
@@ -111,9 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
 
   function initApp() {
-    // Apply Theme
-    document.body.setAttribute('data-theme', config.theme);
-    themeSelect.value = config.theme;
+    // Apply Default Theme
+    document.body.setAttribute('data-theme', 'default');
 
     // Set Header Data
     updateCoupleHeader();
@@ -303,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Upload Modal Handlers
   openUploadBtn.addEventListener('click', () => {
     uploadModal.classList.add('active');
-    // Set default date to today
     document.getElementById('photo-date-input').value = new Date().toISOString().split('T')[0];
   });
 
@@ -344,11 +345,36 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
+    // Compress & Resize slightly if large to ensure fast sync & local storage fit
     const reader = new FileReader();
     reader.onload = (e) => {
-      activePhotoDataUrl = e.target.result;
-      previewImg.src = activePhotoDataUrl;
-      previewContainer.style.display = 'block';
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200; // max 1200px width/height
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        activePhotoDataUrl = canvas.toDataURL('image/jpeg', 0.85); // 85% JPEG quality
+        previewImg.src = activePhotoDataUrl;
+        previewContainer.style.display = 'block';
+      };
+      img.src = e.target.result;
     };
     reader.readAsDataURL(file);
   }
@@ -384,7 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetUploadForm();
 
     // Burst hearts celebration
-    spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
+    spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 25);
   });
 
   function resetUploadForm() {
@@ -405,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       localStorage.setItem('love_photos', JSON.stringify(photos));
     } catch (err) {
-      console.warn('LocalStorage limit reached for large images:', err);
+      console.warn('LocalStorage limit:', err);
     }
   }
 
@@ -433,7 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const timelineList = document.getElementById('timeline-list');
     timelineList.innerHTML = '';
 
-    // Sort by date ascending
     const sorted = [...photos].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (sorted.length === 0) {
@@ -471,7 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <button class="action-btn delete-bucket" style="width: 26px; height: 26px; font-size: 0.75rem;">&times;</button>
       `;
 
-      // Toggle check
       const chk = el.querySelector('.bucket-checkbox');
       chk.addEventListener('change', () => {
         bucketList[index].completed = chk.checked;
@@ -479,7 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBucketList();
       });
 
-      // Delete item
       const delBtn = el.querySelector('.delete-bucket');
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -519,112 +542,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Theme Toggler
-  themeSelect.addEventListener('change', (e) => {
-    config.theme = e.target.value;
-    localStorage.setItem('love_theme', config.theme);
-    document.body.setAttribute('data-theme', config.theme);
-  });
-
-  // Settings Modal Handlers
-  settingsBtn.addEventListener('click', () => {
-    settingNamesInput.value = config.coupleNames;
-    settingDateInput.value = config.anniversaryDate;
-    settingsModal.classList.add('active');
-  });
-
-  closeSettingsModal.addEventListener('click', () => {
-    settingsModal.classList.remove('active');
-  });
-
-  settingsForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    config.coupleNames = settingNamesInput.value.trim() || DEFAULT_COUPLE_NAMES;
-    config.anniversaryDate = settingDateInput.value || DEFAULT_ANNIVERSARY_DATE;
-
-    localStorage.setItem('love_couple_names', config.coupleNames);
-    localStorage.setItem('love_anniversary_date', config.anniversaryDate);
-
-    updateCoupleHeader();
-    startLoveCounter();
-    settingsModal.classList.remove('active');
-
-    alert('บันทึกตั้งค่าเรียบร้อยแล้วค่ะ! วันครบรอบและรหัสผ่านถูกอัปเดตแล้ว 💕');
-  });
-
   // Close modals when clicking overlay
-  [uploadModal, lightboxModal, settingsModal].forEach(modal => {
+  [uploadModal, lightboxModal].forEach(modal => {
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.classList.remove('active');
     });
   });
-
-  // ==========================================================================
-  // 6. SYNTH AUDIO MUSIC PLAYER (100% Self-Contained Web Audio Melody)
-  // ==========================================================================
-  let audioCtx = null;
-  let isPlayingMusic = false;
-  let musicInterval = null;
-
-  musicBtn.addEventListener('click', () => {
-    if (isPlayingMusic) {
-      stopBackgroundMusic();
-    } else {
-      startBackgroundMusic();
-    }
-  });
-
-  function startBackgroundMusic() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-
-    isPlayingMusic = true;
-    musicBtn.classList.add('btn-primary');
-    musicBtn.classList.remove('btn-secondary');
-
-    // Sweet relaxing chime melody notes (Frequencies for C4, E4, G4, A4, C5)
-    const notes = [261.63, 329.63, 392.00, 440.00, 523.25, 392.00, 329.63, 261.63];
-    let noteIdx = 0;
-
-    musicInterval = setInterval(() => {
-      if (!isPlayingMusic) return;
-      playSoftNote(notes[noteIdx]);
-      noteIdx = (noteIdx + 1) % notes.length;
-    }, 600);
-  }
-
-  function stopBackgroundMusic() {
-    isPlayingMusic = false;
-    musicBtn.classList.remove('btn-primary');
-    musicBtn.classList.add('btn-secondary');
-    if (musicInterval) clearInterval(musicInterval);
-  }
-
-  function playSoftNote(freq) {
-    try {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-
-      gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-
-      osc.start();
-      osc.stop(audioCtx.currentTime + 1.2);
-    } catch (e) {
-      console.warn('Audio synth note error:', e);
-    }
-  }
 
   // ==========================================================================
   // 7. FLOATING HEARTS BACKGROUND CANVAS & INTERACTIVE BURST
@@ -637,7 +560,6 @@ document.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Initial background floating particles
     for (let i = 0; i < 25; i++) {
       particles.push(createHeartParticle(false));
     }
@@ -685,7 +607,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
-      // Draw Heart Shape
       ctx.save();
       ctx.globalAlpha = p.opacity;
       ctx.fillStyle = p.color;
@@ -694,13 +615,9 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.beginPath();
       const topCurveHeight = p.size * 0.3;
       ctx.moveTo(0, topCurveHeight);
-      // top left curve
       ctx.bezierCurveTo(0, 0, -p.size / 2, 0, -p.size / 2, topCurveHeight);
-      // bottom left curve
       ctx.bezierCurveTo(-p.size / 2, (p.size + topCurveHeight) / 2, 0, p.size, 0, p.size);
-      // bottom right curve
       ctx.bezierCurveTo(0, p.size, p.size / 2, (p.size + topCurveHeight) / 2, p.size / 2, topCurveHeight);
-      // top right curve
       ctx.bezierCurveTo(p.size / 2, 0, 0, 0, 0, topCurveHeight);
       ctx.closePath();
       ctx.fill();
@@ -716,9 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Click on screen spawns bursting hearts
   window.addEventListener('click', (e) => {
-    // Avoid triggering burst on button click if preferred
     spawnHeartBurst(e.clientX, e.clientY, 8);
   });
 
@@ -727,23 +642,24 @@ document.addEventListener('DOMContentLoaded', () => {
     return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  // Cute Dynamic SVG Data URL Generator for default photos
   function createCuteSvgDataUrl(emoji, label, color1, color2) {
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
-        <defs>
-          <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="${color1}" />
-            <stop offset="100%" stop-color="${color2}" />
-          </linearGradient>
-        </defs>
-        <rect width="600" height="450" fill="url(#g)" />
-        <circle cx="300" cy="200" r="90" fill="white" opacity="0.3" />
-        <text x="300" y="225" font-size="90" text-anchor="middle">${emoji}</text>
-        <text x="300" y="340" font-family="sans-serif" font-size="28" font-weight="bold" fill="white" text-anchor="middle">${label}</text>
-      </svg>
-    `;
-    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450">
+      <defs>
+        <linearGradient id="g_${Math.random().toString(36).substring(2)}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${color1}" stop-opacity="0.95" />
+          <stop offset="100%" stop-color="${color2}" stop-opacity="0.95" />
+        </linearGradient>
+      </defs>
+      <rect width="600" height="450" fill="${color1}" />
+      <circle cx="300" cy="200" r="95" fill="white" opacity="0.35" />
+      <text x="300" y="225" font-size="90" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+      <text x="300" y="340" font-family="sans-serif" font-size="28" font-weight="bold" fill="white" text-anchor="middle">${label}</text>
+    </svg>`;
+    try {
+      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    } catch(e) {
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
   }
 
   // RUN APP!
