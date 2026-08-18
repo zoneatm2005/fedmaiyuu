@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const DEFAULT_COUPLE_NAMES = 'You & Me 💕';
   const IMGBB_API_KEY = '2855f6e88ea6637643a68de851842e49'; // ImgBB Cloud Storage API Key
 
+  // --- SUPABASE REALTIME CLOUD SYNC CONFIG ---
+  const SUPABASE_URL = 'https://vqawcettdkjbhmxevyuk.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_FKlGbWAjQ5o-FoJT029OHQ_Gi2GC_D3';
+  let supabase = null;
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
   let config = {
     anniversaryDate: localStorage.getItem('love_anniversary_date') || DEFAULT_ANNIVERSARY_DATE,
     coupleNames: localStorage.getItem('love_couple_names') || DEFAULT_COUPLE_NAMES,
@@ -16,51 +24,39 @@ document.addEventListener('DOMContentLoaded', () => {
     unlocked: sessionStorage.getItem('love_unlocked') === 'true'
   };
 
-  // --- INITIAL SAMPLE PHOTOS (High Quality Romantic Canvas Visuals) ---
-  const DEFAULT_PHOTOS = [
-    {
-      id: 'photo-1',
-      title: 'เดตแรกที่คาเฟ่ ☕',
-      date: '2026-08-02',
-      category: 'First Date',
-      caption: 'วันแรกที่เราตกลงคบกัน บรรยากาศอบอุ่น รอยยิ้มของเธอน่ารักที่สุดเลย ❤️',
-      imageSrc: createCuteCanvasDataUrl('☕', 'First Date Cafe', '#ffb3c6', '#ff85a1')
-    },
-    {
-      id: 'photo-2',
-      title: 'ทริปเที่ยวทะเลด้วยกัน 🌊',
-      date: '2026-08-10',
-      category: 'Trips',
-      caption: 'ลมทะเลเย็นๆ กับมือที่จับกันไว้ ไม่เคยรู้สึกมีความสุขขนาดนี้มาก่อน',
-      imageSrc: createCuteCanvasDataUrl('🌊', 'Sunset Beach Trip', '#a2d2ff', '#bde0fe')
-    },
-    {
-      id: 'photo-3',
-      title: 'รูปคู่ฮาๆ ช่วงเวลาน่ารัก 🐱',
-      date: '2026-08-15',
-      category: 'Cute',
-      caption: 'แอบถ่ายรูปเธอตอนกินขนม น่ารักจนต้องบันทึกไว้ในความทรงจำ 🍓',
-      imageSrc: createCuteCanvasDataUrl('🐱', 'Sweet Cute Moments', '#ffc8dd', '#ffafcc')
-    }
-  ];
-
+  // --- CLEAN SLATE INITIALIZATION (CLEARED ALL PLACEHOLDERS) ---
   let savedPhotos = null;
   try {
     const raw = localStorage.getItem('love_photos');
-    if (raw) savedPhotos = JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        // Filter out sample placeholders
+        savedPhotos = parsed.filter(p => p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3');
+      }
+    }
   } catch (e) {
     console.error(e);
   }
 
-  let photos = (Array.isArray(savedPhotos) && savedPhotos.length > 0) ? savedPhotos : DEFAULT_PHOTOS;
+  let photos = Array.isArray(savedPhotos) ? savedPhotos : [];
   try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch(e) {}
 
-  let bucketList = JSON.parse(localStorage.getItem('love_bucket')) || [
-    { id: 'b1', text: 'ไปดูพระอาทิตย์ตกที่ทะเลด้วยกัน 🌅', completed: true },
-    { id: 'b2', text: 'ใส่เสื้อคู่ไปเที่ยวงานเทศกาล 🎡', completed: false },
-    { id: 'b3', text: 'ทำอาหารด้วยกันมื้อเย็น 🍝', completed: false },
-    { id: 'b4', text: 'ฉลองวันครบรอบทุกปีตลอดไป 🎂', completed: false }
-  ];
+  let savedBucket = null;
+  try {
+    const rawB = localStorage.getItem('love_bucket');
+    if (rawB) {
+      const parsedB = JSON.parse(rawB);
+      if (Array.isArray(parsedB)) {
+        savedBucket = parsedB.filter(b => b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4');
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  let bucketList = Array.isArray(savedBucket) ? savedBucket : [];
+  try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch(e) {}
 
   // --- DOM ELEMENTS ---
   const lockScreen = document.getElementById('lock-screen');
@@ -133,9 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline();
     renderBucketList();
 
-    // Start Online Realtime Cloud Data Sync
+    // Start Online Realtime Cloud Data Sync (Supabase WebSockets & Fallback)
     syncFromCloud();
-    setInterval(syncFromCloud, 3000); // Check for updates from partner every 3 seconds
+    initSupabaseRealtime();
+    setInterval(syncFromCloud, 3000); // Polling backup every 3 seconds
 
     // Init Floating Canvas Hearts Animation
     initHeartsCanvas();
@@ -467,32 +464,57 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline();
   }
 
-  // --- REALTIME CLOUD DATA SYNC ENGINE (OPEN CORS NPOINT STORE) ---
-  const CLOUD_SYNC_ENDPOINT = 'https://api.npoint.io/e0d65a88c3f58a74e508';
+  // --- SUPABASE REALTIME CLOUD DATA SYNC ENGINE ---
   let isCloudSaving = false;
 
   async function syncFromCloud() {
     if (isCloudSaving) return;
     try {
-      const res = await fetch(CLOUD_SYNC_ENDPOINT);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data === 'object') {
-          if (Array.isArray(data.photos) && JSON.stringify(data.photos) !== JSON.stringify(photos)) {
-            photos = data.photos;
+      let data = null;
+      if (supabase) {
+        const { data: rows, error } = await supabase
+          .from('love_data')
+          .select('data')
+          .eq('id', 'shared_app_data');
+        if (!error && Array.isArray(rows) && rows.length > 0) {
+          data = rows[0].data;
+        }
+      }
+
+      if (!data) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/love_data?id=eq.shared_app_data&select=data`, {
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+        if (res.ok) {
+          const rows = await res.json();
+          if (Array.isArray(rows) && rows.length > 0) data = rows[0].data;
+        }
+      }
+
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.photos)) {
+          const cleanPhotos = data.photos.filter(p => p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3');
+          if (JSON.stringify(cleanPhotos) !== JSON.stringify(photos)) {
+            photos = cleanPhotos;
             try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
             renderGallery();
             renderTimeline();
           }
-          if (Array.isArray(data.bucketList) && JSON.stringify(data.bucketList) !== JSON.stringify(bucketList)) {
-            bucketList = data.bucketList;
+        }
+        if (Array.isArray(data.bucketList)) {
+          const cleanBucket = data.bucketList.filter(b => b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4');
+          if (JSON.stringify(cleanBucket) !== JSON.stringify(bucketList)) {
+            bucketList = cleanBucket;
             try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) {}
             renderBucketList();
           }
         }
       }
     } catch (e) {
-      console.warn('Cloud sync fetch warning:', e);
+      console.warn('Supabase sync fetch warning:', e);
     }
   }
 
@@ -504,15 +526,47 @@ document.addEventListener('DOMContentLoaded', () => {
         bucketList: bucketList,
         lastUpdated: Date.now()
       };
-      await fetch(CLOUD_SYNC_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+
+      if (supabase) {
+        await supabase.from('love_data').upsert({
+          id: 'shared_app_data',
+          data: payload,
+          updated_at: new Date().toISOString()
+        });
+      } else {
+        await fetch(`${SUPABASE_URL}/rest/v1/love_data`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify({
+            id: 'shared_app_data',
+            data: payload,
+            updated_at: new Date().toISOString()
+          })
+        });
+      }
     } catch (e) {
-      console.warn('Cloud sync push warning:', e);
+      console.warn('Supabase push warning:', e);
     } finally {
-      setTimeout(() => { isCloudSaving = false; }, 1200);
+      setTimeout(() => { isCloudSaving = false; }, 800);
+    }
+  }
+
+  function initSupabaseRealtime() {
+    if (!supabase) return;
+    try {
+      supabase
+        .channel('public:love_data')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'love_data' }, () => {
+          syncFromCloud();
+        })
+        .subscribe();
+    } catch (e) {
+      console.warn('Supabase Realtime subscription warning:', e);
     }
   }
 
