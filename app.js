@@ -52,17 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.error(e);
   }
 
-  // Force update any sample SVG photos in localStorage to clean PNG Canvas URLs
-  let photos = DEFAULT_PHOTOS;
-  if (Array.isArray(savedPhotos) && savedPhotos.length > 0) {
-    photos = savedPhotos.map(p => {
-      if (p.id === 'photo-1') p.imageSrc = DEFAULT_PHOTOS[0].imageSrc;
-      if (p.id === 'photo-2') p.imageSrc = DEFAULT_PHOTOS[1].imageSrc;
-      if (p.id === 'photo-3') p.imageSrc = DEFAULT_PHOTOS[2].imageSrc;
-      return p;
-    });
-  }
-
+  let photos = (Array.isArray(savedPhotos) && savedPhotos.length > 0) ? savedPhotos : DEFAULT_PHOTOS;
   try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch(e) {}
 
   let bucketList = JSON.parse(localStorage.getItem('love_bucket')) || [
@@ -145,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start Online Realtime Cloud Data Sync
     syncFromCloud();
-    setInterval(syncFromCloud, 5000); // Check for updates from partner every 5 seconds
+    setInterval(syncFromCloud, 3000); // Check for updates from partner every 3 seconds
 
     // Init Floating Canvas Hearts Animation
     initHeartsCanvas();
@@ -477,8 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline();
   }
 
-  // --- REALTIME CLOUD DATA SYNC ENGINE ---
-  const CLOUD_SYNC_ENDPOINT = 'https://fedmaiyuu-love-default-rtdb.firebaseio.com/app_sync.json';
+  // --- REALTIME CLOUD DATA SYNC ENGINE (OPEN CORS CLOUD STORE) ---
+  const CLOUD_SYNC_ENDPOINT = 'https://kvdb.io/9kL7mP2wQ4R8vT1n/fedmaiyuu_love_data';
   let isCloudSaving = false;
 
   async function syncFromCloud() {
@@ -487,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(CLOUD_SYNC_ENDPOINT);
       if (res.ok) {
         const data = await res.json();
-        if (data) {
+        if (data && typeof data === 'object') {
           if (Array.isArray(data.photos) && JSON.stringify(data.photos) !== JSON.stringify(photos)) {
             photos = data.photos;
             try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
@@ -515,14 +505,14 @@ document.addEventListener('DOMContentLoaded', () => {
         lastUpdated: Date.now()
       };
       await fetch(CLOUD_SYNC_ENDPOINT, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
     } catch (e) {
       console.warn('Cloud sync push warning:', e);
     } finally {
-      setTimeout(() => { isCloudSaving = false; }, 1500);
+      setTimeout(() => { isCloudSaving = false; }, 1200);
     }
   }
 
