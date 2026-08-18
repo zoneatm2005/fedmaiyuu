@@ -467,8 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTimeline();
   }
 
-  // --- REALTIME CLOUD DATA SYNC ENGINE (OPEN CORS CLOUD STORE) ---
-  const CLOUD_SYNC_ENDPOINT = 'https://kvdb.io/9kL7mP2wQ4R8vT1n/fedmaiyuu_love_data';
+  // --- REALTIME CLOUD DATA SYNC ENGINE (OPEN CORS NPOINT STORE) ---
+  const CLOUD_SYNC_ENDPOINT = 'https://api.npoint.io/e0d65a88c3f58a74e508';
   let isCloudSaving = false;
 
   async function syncFromCloud() {
