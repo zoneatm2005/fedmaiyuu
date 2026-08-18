@@ -896,3 +896,70 @@ input:focus, textarea:focus, select:focus {
     right: auto !important;
   }
 }
+
+/* ==========================================================================
+   8. TOAST NOTIFICATIONS SYSTEM & SYNC STATUS BADGES
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 260px;
+  max-width: 380px;
+  padding: 14px 20px;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--card-border);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  color: var(--text-dark);
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideToastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast.hide {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+}
+
+.toast-success {
+  border-left: 4px solid #4caf50;
+  color: #1b5e20;
+}
+
+.toast-error {
+  border-left: 4px solid #f44336;
+  color: #b71c1c;
+}
+
+.toast-info {
+  border-left: 4px solid var(--primary);
+  color: var(--primary);
+}
+
+@keyframes slideToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+

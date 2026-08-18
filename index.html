@@ -251,6 +251,34 @@
 
 
 
+  <!-- ==========================================================================
+       MODAL 3: ADD BUCKET LIST ITEM MODAL
+       ========================================================================== -->
+  <div class="modal-overlay" id="bucket-modal">
+    <div class="modal-box" style="max-width: 440px;">
+      <button class="modal-close" id="close-bucket-modal">&times;</button>
+      <h2 style="margin-bottom: 18px; color: var(--primary); text-align: center;">
+        ✨ เพิ่มบักเก็ตลิสต์คู่รัก (ซิงก์ Supabase)
+      </h2>
+
+      <form id="bucket-form" onsubmit="return false;">
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">สิ่งที่เราอยากทำด้วยกัน 💕</label>
+            <input type="text" id="bucket-text-input" placeholder="เช่น ไปเที่ยวดูแสงเหนือด้วยกัน 🌌" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top: 10px; width: 100%;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกลง Supabase เรียลไทม์
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
   <!-- App Script -->
   <script src="app.js"></script>
 </body>

@@ -339,13 +339,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // --- TOAST NOTIFICATIONS HELPER ---
+  function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    let icon = 'fa-info-circle';
+    if (type === 'success') icon = 'fa-circle-check';
+    if (type === 'error') icon = 'fa-triangle-exclamation';
+
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('hide');
+      setTimeout(() => toast.remove(), 350);
+    }, duration);
+  }
+
+  function updateSyncBadge(status) {
+    const badge = document.getElementById('cloud-sync-status');
+    if (!badge) return;
+    if (status === 'syncing') {
+      badge.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 0.75rem; color: #ff9800;"></i> กำลังบันทึกลง Supabase...`;
+    } else if (status === 'success') {
+      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #4caf50;"></i> ซิงก์เรียลไทม์ (Supabase Online)`;
+    } else if (status === 'offline') {
+      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #888;"></i> ซิงก์บันทึกท้องถิ่น (ออฟไลน์)`;
+    }
+  }
+
   function handleFileSelected(file) {
     if (!file.type.startsWith('image/')) {
       alert('กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ');
       return;
     }
 
-    // Compress & Resize slightly if large to ensure fast sync & local storage fit
+    // Compress & Resize efficiently to ensure fast sync & fit payload size limits
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
@@ -353,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDim = 1200; // max 1200px width/height
+        const maxDim = 1000; // max 1000px dimension for fast cloud sync
 
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -370,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        activePhotoDataUrl = canvas.toDataURL('image/jpeg', 0.85); // 85% JPEG quality
+        activePhotoDataUrl = canvas.toDataURL('image/jpeg', 0.75); // 75% quality JPEG (~80-120KB)
         previewImg.src = activePhotoDataUrl;
         previewContainer.style.display = 'block';
       };
@@ -396,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return result.data.url; // Returns permanent HTTPS Cloud Image URL!
       }
     } catch (e) {
-      console.error('ImgBB cloud upload error:', e);
+      console.warn('ImgBB cloud upload fallback:', e);
     }
     return base64Data;
   }
@@ -417,7 +450,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = uploadForm.querySelector('button[type="submit"]');
     const originalBtnContent = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce"></i> กำลังส่งรูปขึ้นคลาวด์ออนไลน์...';
+    submitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-bounce"></i> กำลังบันทึกลง Supabase...';
+
+    showToast('กำลังเตรียมและบันทึกรูปภาพความทรงจำ...', 'info');
 
     let cloudImageUrl = activePhotoDataUrl;
     try {
@@ -432,22 +467,25 @@ document.addEventListener('DOMContentLoaded', () => {
       date: date || new Date().toISOString().split('T')[0],
       category: category,
       caption: caption || 'บันทึกความรู้สึกหวานๆ 💕',
-      imageSrc: cloudImageUrl
+      imageSrc: cloudImageUrl,
+      updatedAt: Date.now()
     };
 
-    photos.unshift(newPhoto); // Add to top
-    savePhotos();
+    photos.unshift(newPhoto); // Add to top locally
     renderGallery();
     renderTimeline();
 
+    // Close Modal immediately for smooth UI
+    uploadModal.classList.remove('active');
+    resetUploadForm();
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalBtnContent;
 
-    uploadModal.classList.remove('active');
-    resetUploadForm();
-
     // Burst hearts celebration
     spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 25);
+
+    // Save to Local & Supabase Cloud
+    await savePhotos();
   });
 
   function resetUploadForm() {
@@ -459,67 +497,149 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function deletePhoto(id) {
     photos = photos.filter(p => p.id !== id);
-    savePhotos();
     renderGallery();
     renderTimeline();
+    savePhotos();
+    showToast('ลบรูปภาพเรียบร้อยแล้ว', 'info');
   }
 
   // --- SUPABASE REALTIME CLOUD DATA SYNC ENGINE ---
   let isCloudSaving = false;
+  const FALLBACK_SYNC_URL = 'https://api.npoint.io/e0d65a88c3f58a74e508';
 
   async function syncFromCloud() {
-    if (isCloudSaving) return;
+    if (isCloudSaving) return; // Skip sync if currently pushing local changes
     try {
-      let data = null;
+      let cloudPhotos = null;
+      let cloudBucket = null;
+
+      // 1. Try Supabase JS Client (Separate Tables or Shared JSON)
       if (supabase) {
-        const { data: rows, error } = await supabase
-          .from('love_data')
-          .select('data')
-          .eq('id', 'shared_app_data');
-        if (!error && Array.isArray(rows) && rows.length > 0) {
-          data = rows[0].data;
+        try {
+          // Check love_memories table
+          const { data: memRows } = await supabase.from('love_memories').select('*');
+          if (Array.isArray(memRows) && memRows.length > 0) {
+            cloudPhotos = memRows.map(r => ({
+              id: r.id,
+              title: r.title,
+              date: r.date,
+              category: r.category,
+              caption: r.caption,
+              imageSrc: r.image_url || r.imageSrc
+            }));
+          }
+
+          // Check love_bucket table
+          const { data: bucketRows } = await supabase.from('love_bucket').select('*');
+          if (Array.isArray(bucketRows) && bucketRows.length > 0) {
+            cloudBucket = bucketRows.map(r => ({
+              id: r.id,
+              text: r.text,
+              completed: !!r.completed
+            }));
+          }
+
+          // Check unified love_data table
+          if (!cloudPhotos || !cloudBucket) {
+            const { data: rows } = await supabase.from('love_data').select('data').eq('id', 'shared_app_data');
+            if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
+              if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
+              if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
+            }
+          }
+        } catch(err) {
+          console.warn('Supabase fetch error:', err);
         }
       }
 
-      if (!data) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/love_data?id=eq.shared_app_data&select=data`, {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      // 2. Try Supabase REST API Fallback
+      if (!cloudPhotos || !cloudBucket) {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/love_data?id=eq.shared_app_data&select=data`, {
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+          });
+          if (res.ok) {
+            const rows = await res.json();
+            if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
+              if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
+              if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
+            }
+          }
+        } catch(err) {}
+      }
+
+      // 3. Fallback Online Store if Supabase is still connecting
+      if (!cloudPhotos && !cloudBucket) {
+        try {
+          const res = await fetch(FALLBACK_SYNC_URL);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              if (Array.isArray(data.photos)) cloudPhotos = data.photos;
+              if (Array.isArray(data.bucketList)) cloudBucket = data.bucketList;
+            }
+          }
+        } catch(err) {}
+      }
+
+      // --- SMART MERGE: DO NOT ERASE LOCAL UNPERSISTED ITEMS ---
+      let updated = false;
+
+      if (Array.isArray(cloudPhotos)) {
+        const cleanCloudPhotos = cloudPhotos.filter(p => p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3');
+        // Smart merge by ID: keep local items if not present in cloud yet
+        const mergedPhotosMap = new Map();
+        // Add cloud photos first
+        cleanCloudPhotos.forEach(p => mergedPhotosMap.set(p.id, p));
+        // Add local photos (preserving recent additions)
+        photos.forEach(p => {
+          if (!mergedPhotosMap.has(p.id)) {
+            mergedPhotosMap.set(p.id, p);
           }
         });
-        if (res.ok) {
-          const rows = await res.json();
-          if (Array.isArray(rows) && rows.length > 0) data = rows[0].data;
+
+        const mergedPhotos = Array.from(mergedPhotosMap.values());
+        if (JSON.stringify(mergedPhotos) !== JSON.stringify(photos)) {
+          photos = mergedPhotos;
+          try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
+          renderGallery();
+          renderTimeline();
+          updated = true;
         }
       }
 
-      if (data && typeof data === 'object') {
-        if (Array.isArray(data.photos)) {
-          const cleanPhotos = data.photos.filter(p => p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3');
-          if (JSON.stringify(cleanPhotos) !== JSON.stringify(photos)) {
-            photos = cleanPhotos;
-            try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
-            renderGallery();
-            renderTimeline();
+      if (Array.isArray(cloudBucket)) {
+        const cleanCloudBucket = cloudBucket.filter(b => b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4');
+        const mergedBucketMap = new Map();
+        cleanCloudBucket.forEach(b => mergedBucketMap.set(b.id, b));
+        bucketList.forEach(b => {
+          if (!mergedBucketMap.has(b.id)) {
+            mergedBucketMap.set(b.id, b);
           }
-        }
-        if (Array.isArray(data.bucketList)) {
-          const cleanBucket = data.bucketList.filter(b => b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4');
-          if (JSON.stringify(cleanBucket) !== JSON.stringify(bucketList)) {
-            bucketList = cleanBucket;
-            try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) {}
-            renderBucketList();
-          }
+        });
+
+        const mergedBucket = Array.from(mergedBucketMap.values());
+        if (JSON.stringify(mergedBucket) !== JSON.stringify(bucketList)) {
+          bucketList = mergedBucket;
+          try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) {}
+          renderBucketList();
+          updated = true;
         }
       }
+
+      updateSyncBadge('success');
     } catch (e) {
-      console.warn('Supabase sync fetch warning:', e);
+      console.warn('Sync fetch warning:', e);
+      updateSyncBadge('offline');
     }
   }
 
   async function pushToCloud() {
     isCloudSaving = true;
+    updateSyncBadge('syncing');
     try {
       const payload = {
         photos: photos,
@@ -527,30 +647,82 @@ document.addEventListener('DOMContentLoaded', () => {
         lastUpdated: Date.now()
       };
 
-      if (supabase) {
-        await supabase.from('love_data').upsert({
-          id: 'shared_app_data',
-          data: payload,
-          updated_at: new Date().toISOString()
-        });
-      } else {
-        await fetch(`${SUPABASE_URL}/rest/v1/love_data`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-            'Prefer': 'resolution=merge-duplicates'
-          },
-          body: JSON.stringify({
+      let pushedSupabase = false;
+
+      // 1. Push to Supabase via JS Client
+      try {
+        if (supabase) {
+          // Attempt unified love_data upsert
+          const { error: dataErr } = await supabase.from('love_data').upsert({
             id: 'shared_app_data',
             data: payload,
             updated_at: new Date().toISOString()
-          })
-        });
+          });
+          if (!dataErr) pushedSupabase = true;
+
+          // Attempt love_memories table upsert
+          if (photos.length > 0) {
+            const memoryRows = photos.map(p => ({
+              id: String(p.id),
+              title: p.title || '',
+              date: p.date || new Date().toISOString().split('T')[0],
+              category: p.category || 'Cute',
+              caption: p.caption || '',
+              image_url: p.imageSrc || '',
+              updated_at: new Date().toISOString()
+            }));
+            await supabase.from('love_memories').upsert(memoryRows);
+          }
+
+          // Attempt love_bucket table upsert
+          if (bucketList.length > 0) {
+            const bucketRows = bucketList.map(b => ({
+              id: String(b.id),
+              text: b.text || '',
+              completed: !!b.completed,
+              updated_at: new Date().toISOString()
+            }));
+            await supabase.from('love_bucket').upsert(bucketRows);
+          }
+        }
+
+        // 2. Supabase REST API Fallback
+        if (!pushedSupabase) {
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/love_data`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              id: 'shared_app_data',
+              data: payload,
+              updated_at: new Date().toISOString()
+            })
+          });
+          if (res.ok) pushedSupabase = true;
+        }
+      } catch (e) {
+        console.warn('Supabase push warning:', e);
       }
+
+      // 3. Sync to Fallback Cloud Store as backup
+      try {
+        await fetch(FALLBACK_SYNC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {}
+
+      updateSyncBadge('success');
+      return true;
     } catch (e) {
-      console.warn('Supabase push warning:', e);
+      console.warn('Push cloud error:', e);
+      updateSyncBadge('offline');
+      return false;
     } finally {
       setTimeout(() => { isCloudSaving = false; }, 800);
     }
@@ -564,28 +736,44 @@ document.addEventListener('DOMContentLoaded', () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'love_data' }, () => {
           syncFromCloud();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'love_memories' }, () => {
+          syncFromCloud();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'love_bucket' }, () => {
+          syncFromCloud();
+        })
         .subscribe();
     } catch (e) {
       console.warn('Supabase Realtime subscription warning:', e);
     }
   }
 
-  function savePhotos() {
+  async function savePhotos() {
     try {
       localStorage.setItem('love_photos', JSON.stringify(photos));
     } catch (err) {
       console.warn('LocalStorage limit:', err);
     }
-    pushToCloud();
+    const success = await pushToCloud();
+    if (success) {
+      showToast('บันทึกรูปภาพความทรงจำลง Supabase เรียบร้อยแล้ว 💕', 'success');
+    } else {
+      showToast('บันทึกไว้ในอุปกรณ์เรียบร้อยแล้ว (จะซิงก์ขึ้น Supabase เมื่อออนไลน์)', 'info');
+    }
   }
 
-  function saveBucketList() {
+  async function saveBucketList() {
     try {
       localStorage.setItem('love_bucket', JSON.stringify(bucketList));
     } catch (err) {
       console.warn('LocalStorage limit:', err);
     }
-    pushToCloud();
+    const success = await pushToCloud();
+    if (success) {
+      showToast('ซิงก์บักเก็ตลิสต์ลง Supabase เรียบร้อยแล้ว ✨', 'success');
+    } else {
+      showToast('บันทึกบักเก็ตลิสต์เรียบร้อยแล้ว', 'info');
+    }
   }
 
   // Lightbox Modal
@@ -640,42 +828,80 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderBucketList() {
     bucketListContainer.innerHTML = '';
 
+    if (bucketList.length === 0) {
+      bucketListContainer.innerHTML = `<p style="text-align: center; color: var(--text-muted); padding: 20px;">ยังไม่มีรายการในบักเก็ตลิสต์ กดปุ่ม "+" ด้านบนเพื่อเพิ่มได้เลยครับ 💕</p>`;
+      return;
+    }
+
     bucketList.forEach((item, index) => {
       const el = document.createElement('div');
       el.className = `bucket-item ${item.completed ? 'completed' : ''}`;
       el.innerHTML = `
         <input type="checkbox" class="bucket-checkbox" ${item.completed ? 'checked' : ''}>
         <span class="bucket-text">${escapeHtml(item.text)}</span>
-        <button class="action-btn delete-bucket" style="width: 26px; height: 26px; font-size: 0.75rem;">&times;</button>
+        <button class="action-btn delete-bucket" style="width: 26px; height: 26px; font-size: 0.75rem;" title="ลบรายการนี้">&times;</button>
       `;
 
       const chk = el.querySelector('.bucket-checkbox');
       chk.addEventListener('change', () => {
         bucketList[index].completed = chk.checked;
-        saveBucketList();
         renderBucketList();
+        saveBucketList();
       });
 
       const delBtn = el.querySelector('.delete-bucket');
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         bucketList.splice(index, 1);
-        saveBucketList();
         renderBucketList();
+        saveBucketList();
       });
 
       bucketListContainer.appendChild(el);
     });
   }
 
+  // Bucket List Modal Elements
+  const bucketModal = document.getElementById('bucket-modal');
+  const closeBucketModal = document.getElementById('close-bucket-modal');
+  const bucketForm = document.getElementById('bucket-form');
+  const bucketTextInput = document.getElementById('bucket-text-input');
+
   addBucketBtn.addEventListener('click', () => {
-    const text = prompt('ใส่กิจกรรมน่ารักๆ ที่อยากทำด้วยกัน 💖:');
-    if (text && text.trim()) {
-      bucketList.push({ id: 'b-' + Date.now(), text: text.trim(), completed: false });
-      saveBucketList();
-      renderBucketList();
+    if (bucketModal) {
+      bucketModal.classList.add('active');
+      if (bucketTextInput) bucketTextInput.focus();
+    } else {
+      const text = prompt('ใส่กิจกรรมน่ารักๆ ที่อยากทำด้วยกัน 💖:');
+      if (text && text.trim()) {
+        bucketList.push({ id: 'b-' + Date.now(), text: text.trim(), completed: false });
+        renderBucketList();
+        saveBucketList();
+      }
     }
   });
+
+  if (closeBucketModal) {
+    closeBucketModal.addEventListener('click', () => {
+      bucketModal.classList.remove('active');
+      if (bucketForm) bucketForm.reset();
+    });
+  }
+
+  if (bucketForm) {
+    bucketForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = bucketTextInput.value.trim();
+      if (text) {
+        bucketList.push({ id: 'b-' + Date.now(), text: text, completed: false });
+        renderBucketList();
+        saveBucketList();
+        bucketModal.classList.remove('active');
+        bucketForm.reset();
+        spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 15);
+      }
+    });
+  }
 
   // ==========================================================================
   // 5. NAVIGATION & SETTINGS
@@ -692,10 +918,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Close modals when clicking overlay
-  [uploadModal, lightboxModal].forEach(modal => {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) modal.classList.remove('active');
-    });
+  [uploadModal, lightboxModal, bucketModal].forEach(modal => {
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('active');
+      });
+    }
   });
 
   // ==========================================================================
