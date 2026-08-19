@@ -27,11 +27,23 @@
         💖
       </div>
       <h1 class="lock-title">Freshmaiyuu</h1>
-      <p class="lock-subtitle">ใส่วันที่เราครบกันเพื่อปลดล็อกความหวานนะคะ</p>
+      <p class="lock-subtitle">ใส่รหัสผ่านเพื่อปลดล็อกความหวานนะคะ 💕</p>
 
       <form id="lock-form" onsubmit="return false;">
-        <div class="date-input-container">
-          <input type="date" id="anniversary-pass-input" class="date-picker-styled" value="2026-08-02" required>
+        <div class="passcode-input-container">
+          <div class="passcode-input-wrapper">
+            <i class="fa-solid fa-key passcode-icon"></i>
+            <input 
+              type="text" 
+              id="anniversary-pass-input" 
+              class="passcode-input-styled" 
+              placeholder="วันที่คบกันค้าบที่รัก" 
+              maxlength="10"
+              autocomplete="off"
+              inputmode="numeric"
+              required
+            >
+          </div>
         </div>
 
         <button type="submit" id="unlock-btn" class="btn btn-primary" style="width: 100%;">
@@ -43,7 +55,7 @@
         <i class="fa-regular fa-lightbulb"></i> คำใบ้รหัสผ่าน
       </p>
       <p id="hint-text" style="display: none; margin-top: 8px; font-size: 0.88rem; color: var(--primary);">
-        รหัสผ่านตั้งต้นคือวันที่ <b>วันที่เราคบกัน</b>
+        รหัสผ่านคือ <b>02082569</b> (วันที่เราคบกัน)
       </p>
     </div>
   </div>

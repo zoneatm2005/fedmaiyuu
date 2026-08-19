@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
       startLoveCounter();
     } else {
       lockScreen.classList.remove('unlocked');
-      passInput.value = config.anniversaryDate;
+      passInput.value = '';
     }
 
     // Render Components
@@ -161,12 +161,19 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeartsCanvas();
   }
 
-  // Check Passcode Login
+  // Check Passcode Login (Target: 02082569)
+  const VALID_PASSCODES = ['02082569', '02082026', '2026-08-02', '02/08/2569', '02/08/2026'];
+
   lockForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const enteredDate = passInput.value;
+    const enteredPass = (passInput.value || '').trim();
+    const cleanEntered = enteredPass.replace(/[\/\-\s]/g, '');
 
-    if (enteredDate === config.anniversaryDate) {
+    if (
+      cleanEntered === '02082569' || 
+      VALID_PASSCODES.includes(enteredPass) || 
+      VALID_PASSCODES.map(p => p.replace(/[\/\-\s]/g, '')).includes(cleanEntered)
+    ) {
       // SUCCESS: Unlock!
       config.unlocked = true;
       sessionStorage.setItem('love_unlocked', 'true');
@@ -176,13 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       lockScreen.classList.add('unlocked');
       startLoveCounter();
+      showToast('ปลดล็อกสำเร็จแล้ว ยินดีต้อนรับนะคะ 💕', 'success');
     } else {
       // ERROR: Shake Card
       const lockCard = document.querySelector('.lock-card');
       lockCard.classList.add('error-shake');
       setTimeout(() => lockCard.classList.remove('error-shake'), 600);
 
-      alert('💔 รหัสผ่านวันครบรอบไม่ถูกต้อง ลองใส่วันที่ 02/08/2026 ดูนะจ๊ะ');
+      alert('💔 รหัสผ่านไม่ถูกนะ 💕');
+      passInput.focus();
     }
   });
 
@@ -195,8 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
   lockAppBtn.addEventListener('click', () => {
     config.unlocked = false;
     sessionStorage.removeItem('love_unlocked');
+    passInput.value = '';
     lockScreen.classList.remove('unlocked');
     if (counterInterval) clearInterval(counterInterval);
+    setTimeout(() => { if (passInput) passInput.focus(); }, 300);
   });
 
   // ==========================================================================
@@ -554,9 +565,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (status === 'syncing') {
       badge.innerHTML = `<i class="fa-solid fa-spinner fa-spin" style="font-size: 0.75rem; color: #ff9800;"></i> กำลังบันทึกลง Supabase...`;
     } else if (status === 'success') {
-      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #4caf50;"></i> ซิงก์เรียลไทม์ (Supabase Online)`;
+      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #4caf50;"></i> หมูเข้ามาดู`;
     } else if (status === 'offline') {
-      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #888;"></i> ซิงก์บันทึกท้องถิ่น (ออฟไลน์)`;
+      badge.innerHTML = `<i class="fa-solid fa-circle" style="font-size: 0.5rem; color: #888;"></i> หมูออกไปแล้ว`;
     }
   }
 
