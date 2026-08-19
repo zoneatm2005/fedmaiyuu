@@ -3,7 +3,7 @@
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
-  
+
   // --- DEFAULT STATE & STORAGE CONFIG ---
   const DEFAULT_ANNIVERSARY_DATE = '2026-08-02'; // รหัสผ่านวันครบรอบตั้งต้น: 02/08/2026
   const DEFAULT_COUPLE_NAMES = 'You & Me 💕';
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let photos = Array.isArray(savedPhotos) ? savedPhotos : [];
-  try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch(e) {}
+  try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) { }
 
   let savedBucket = null;
   try {
@@ -56,20 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let bucketList = Array.isArray(savedBucket) ? savedBucket : [];
-  try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch(e) {}
+  try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) { }
 
   // --- TRACK DELETED ITEMS TO PREVENT RE-SYNC RESTORATION ---
   let deletedPhotoIds = [];
   try {
     const rawDP = localStorage.getItem('love_deleted_photos');
     if (rawDP) deletedPhotoIds = JSON.parse(rawDP);
-  } catch (e) {}
+  } catch (e) { }
 
   let deletedBucketIds = [];
   try {
     const rawDB = localStorage.getItem('love_deleted_bucket');
     if (rawDB) deletedBucketIds = JSON.parse(rawDB);
-  } catch (e) {}
+  } catch (e) { }
 
 
   // --- DOM ELEMENTS ---
@@ -91,6 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const galleryGrid = document.getElementById('gallery-grid');
   const filterChips = document.querySelectorAll('.filter-chip');
+  const galleryDateFilter = document.getElementById('gallery-date-filter');
+  const clearDateBtn = document.getElementById('clear-date-btn');
+  const gallerySortSelect = document.getElementById('gallery-sort-select');
+  const galleryCountBadge = document.getElementById('gallery-count-badge');
+  const galleryPagination = document.getElementById('gallery-pagination');
   const navTabs = document.querySelectorAll('.nav-tab');
   const tabContents = document.querySelectorAll('.tab-content');
 
@@ -116,6 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let activePhotoDataUrl = null;
   let currentFilter = 'all';
+  let currentDateFilter = '';
+  let currentSortOrder = 'newest';
+  let currentPage = 1;
+  const ITEMS_PER_PAGE = 9;
   let counterInterval = null;
 
   // ==========================================================================
@@ -164,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Heart burst effect
       spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 30);
-      
+
       lockScreen.classList.add('unlocked');
       startLoveCounter();
     } else {
@@ -172,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lockCard = document.querySelector('.lock-card');
       lockCard.classList.add('error-shake');
       setTimeout(() => lockCard.classList.remove('error-shake'), 600);
-      
+
       alert('💔 รหัสผ่านวันครบรอบไม่ถูกต้อง ลองใส่วันที่ 02/08/2026 ดูนะจ๊ะ');
     }
   });
@@ -234,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateCoupleHeader() {
     displayCoupleNames.textContent = config.coupleNames;
-    
+
     // Format Date string DD/MM/YYYY
     const parts = config.anniversaryDate.split('-');
     const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
@@ -245,25 +254,75 @@ document.addEventListener('DOMContentLoaded', () => {
   // 3. PHOTO GALLERY & ALBUM LOGIC
   // ==========================================================================
 
+  function scrollToGalleryTop() {
+    const gallerySection = document.getElementById('tab-gallery');
+    if (gallerySection) {
+      const topOffset = gallerySection.getBoundingClientRect().top + window.pageYOffset - 80;
+      window.scrollTo({ top: Math.max(0, topOffset), behavior: 'smooth' });
+    }
+  }
+
   function renderGallery() {
     galleryGrid.innerHTML = '';
 
-    const filtered = currentFilter === 'all'
+    // 1. Filter by category
+    let filtered = currentFilter === 'all'
       ? photos
       : photos.filter(p => p.category === currentFilter);
 
-    if (filtered.length === 0) {
+    // 2. Filter by date if specified
+    if (currentDateFilter) {
+      filtered = filtered.filter(p => p.date === currentDateFilter);
+    }
+
+    // 3. Sort by date
+    filtered = [...filtered].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (currentSortOrder === 'oldest') {
+        return dateA - dateB;
+      } else {
+        return dateB - dateA;
+      }
+    });
+
+    // Update count badge & clear date button
+    if (galleryCountBadge) {
+      galleryCountBadge.innerHTML = `<i class="fa-solid fa-images"></i> มีทั้งหมด ${filtered.length} รูปภาพ`;
+    }
+    if (clearDateBtn) {
+      clearDateBtn.style.display = currentDateFilter ? 'flex' : 'none';
+    }
+
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
+
+    // Check bounds for currentPage
+    if (currentPage > totalPages) {
+      currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+      currentPage = 1;
+    }
+
+    if (totalItems === 0) {
       galleryGrid.innerHTML = `
         <div class="empty-gallery">
           <div class="empty-icon">📷</div>
-          <h3 style="font-family: var(--font-heading); color: var(--text-dark);">ยังไม่มีรูปภาพในหมวดหมู่นี้</h3>
-          <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">กดปุ่ม "เพิ่มรูปภาพความทรงจำ" เพื่อเพิ่มรูปรูปแรกสิคะ 💕</p>
+          <h3 style="font-family: var(--font-heading); color: var(--text-dark);">ไม่พบรูปภาพตามเงื่อนไขที่เลือก</h3>
+          <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">ลองเปลี่ยนหมวดหมู่ หรือกดปุ่มล้างตัวกรองวันที่ดูสิคะ 💕</p>
         </div>
       `;
+      if (galleryPagination) galleryPagination.innerHTML = '';
       return;
     }
 
-    filtered.forEach(photo => {
+    // Slice 9 photos for current page
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const currentPhotos = filtered.slice(startIndex, endIndex);
+
+    currentPhotos.forEach(photo => {
       const card = document.createElement('div');
       card.className = 'polaroid-card';
 
@@ -304,6 +363,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
       galleryGrid.appendChild(card);
     });
+
+    // Render Pagination Controls
+    renderPagination(totalItems, totalPages);
+  }
+
+  function renderPagination(totalItems, totalPages) {
+    if (!galleryPagination) return;
+    if (totalPages <= 1) {
+      galleryPagination.innerHTML = `
+        <div class="pagination-info-text">
+          แสดงทั้งหมด ${totalItems} รูปภาพ (หน้า 1 จาก 1)
+        </div>
+      `;
+      return;
+    }
+
+    const showingStart = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+    const showingEnd = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+
+    let paginationHtml = `
+      <div class="pagination-wrapper">
+        <button class="page-nav-btn" id="prev-page-btn" ${currentPage === 1 ? 'disabled' : ''}>
+          <i class="fa-solid fa-chevron-left"></i> ก่อนหน้า
+        </button>
+        <div class="pagination-pages">
+    `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - 1 && i <= currentPage + 1)
+      ) {
+        paginationHtml += `<button class="page-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+      } else if (
+        (i === currentPage - 2 && currentPage > 3) ||
+        (i === currentPage + 2 && currentPage < totalPages - 2)
+      ) {
+        paginationHtml += `<span class="page-ellipsis">...</span>`;
+      }
+    }
+
+    paginationHtml += `
+        </div>
+        <button class="page-nav-btn" id="next-page-btn" ${currentPage === totalPages ? 'disabled' : ''}>
+          ถัดไป <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="pagination-info-text">
+        หน้า ${currentPage} จาก ${totalPages} • แสดงรูปที่ ${showingStart}-${showingEnd} จากทั้งหมด ${totalItems} รูป
+      </div>
+    `;
+
+    galleryPagination.innerHTML = paginationHtml;
+
+    // Attach Pagination event listeners
+    const prevBtn = galleryPagination.querySelector('#prev-page-btn');
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderGallery();
+          scrollToGalleryTop();
+        }
+      });
+    }
+
+    const nextBtn = galleryPagination.querySelector('#next-page-btn');
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderGallery();
+          scrollToGalleryTop();
+        }
+      });
+    }
+
+    const pageBtns = galleryPagination.querySelectorAll('.page-num');
+    pageBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetPage = parseInt(btn.dataset.page, 10);
+        if (targetPage && targetPage !== currentPage) {
+          currentPage = targetPage;
+          renderGallery();
+          scrollToGalleryTop();
+        }
+      });
+    });
   }
 
   // Filter Chips
@@ -312,9 +460,35 @@ document.addEventListener('DOMContentLoaded', () => {
       filterChips.forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       currentFilter = chip.dataset.filter;
+      currentPage = 1;
       renderGallery();
     });
   });
+
+  // Date Filter & Sort Listeners
+  if (galleryDateFilter) {
+    galleryDateFilter.addEventListener('change', (e) => {
+      currentDateFilter = e.target.value;
+      currentPage = 1;
+      renderGallery();
+    });
+  }
+
+  if (clearDateBtn) {
+    clearDateBtn.addEventListener('click', () => {
+      currentDateFilter = '';
+      if (galleryDateFilter) galleryDateFilter.value = '';
+      currentPage = 1;
+      renderGallery();
+    });
+  }
+
+  if (gallerySortSelect) {
+    gallerySortSelect.addEventListener('change', (e) => {
+      currentSortOrder = e.target.value;
+      renderGallery();
+    });
+  }
 
   // Upload Modal Handlers
   openUploadBtn.addEventListener('click', () => {
@@ -360,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    
+
     let icon = 'fa-info-circle';
     if (type === 'success') icon = 'fa-circle-check';
     if (type === 'error') icon = 'fa-triangle-exclamation';
@@ -486,6 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     photos.unshift(newPhoto); // Add to top locally
+    currentPage = 1;
     renderGallery();
     renderTimeline();
 
@@ -512,7 +687,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function deletePhoto(id) {
     if (!deletedPhotoIds.includes(id)) {
       deletedPhotoIds.push(id);
-      try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e) {}
+      try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch (e) { }
     }
 
     photos = photos.filter(p => p.id !== id);
@@ -576,7 +751,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
             }
           }
-        } catch(err) {
+        } catch (err) {
           console.warn('Supabase fetch error:', err);
         }
       }
@@ -597,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
             }
           }
-        } catch(err) {}
+        } catch (err) { }
       }
 
       // 3. Fallback Online Store if Supabase is still connecting
@@ -611,14 +786,14 @@ document.addEventListener('DOMContentLoaded', () => {
               if (Array.isArray(data.bucketList)) cloudBucket = data.bucketList;
             }
           }
-        } catch(err) {}
+        } catch (err) { }
       }
 
       // --- SMART MERGE: FILTER OUT DELETED ITEMS & PRESERVE UNPERSISTED ADDITIONS ---
       let updated = false;
 
       if (Array.isArray(cloudPhotos)) {
-        const cleanCloudPhotos = cloudPhotos.filter(p => 
+        const cleanCloudPhotos = cloudPhotos.filter(p =>
           p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3' &&
           !deletedPhotoIds.includes(p.id)
         );
@@ -637,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mergedPhotos = Array.from(mergedPhotosMap.values());
         if (JSON.stringify(mergedPhotos) !== JSON.stringify(photos)) {
           photos = mergedPhotos;
-          try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) {}
+          try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) { }
           renderGallery();
           renderTimeline();
           updated = true;
@@ -645,7 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       if (Array.isArray(cloudBucket)) {
-        const cleanCloudBucket = cloudBucket.filter(b => 
+        const cleanCloudBucket = cloudBucket.filter(b =>
           b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4' &&
           !deletedBucketIds.includes(b.id)
         );
@@ -663,7 +838,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const mergedBucket = Array.from(mergedBucketMap.values());
         if (JSON.stringify(mergedBucket) !== JSON.stringify(bucketList)) {
           bucketList = mergedBucket;
-          try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) {}
+          try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) { }
           renderBucketList();
           updated = true;
         }
@@ -754,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-      } catch (e) {}
+      } catch (e) { }
 
       updateSyncBadge('success');
       return true;
@@ -896,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const targetId = itemToDelete.id;
           if (!deletedBucketIds.includes(targetId)) {
             deletedBucketIds.push(targetId);
-            try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e) {}
+            try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
           }
           if (supabase) {
             try {
@@ -1043,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.globalAlpha = p.opacity;
       ctx.fillStyle = p.color;
       ctx.translate(p.x, p.y);
-      
+
       ctx.beginPath();
       const topCurveHeight = p.size * 0.3;
       ctx.moveTo(0, topCurveHeight);

@@ -135,8 +135,44 @@
         </button>
       </div>
 
-      <!-- Polaroid Grid -->
+      <!-- Date Filter & Sorting Toolbar -->
+      <div class="gallery-toolbar">
+        <div class="toolbar-left">
+          <div class="date-filter-group">
+            <label for="gallery-date-filter" class="filter-label">
+              <i class="fa-solid fa-calendar-days" style="color: var(--primary);"></i> เลือกวันที่:
+            </label>
+            <div class="date-input-wrapper">
+              <input type="date" id="gallery-date-filter" class="gallery-date-input">
+              <button id="clear-date-btn" class="clear-btn" title="ล้างตัวกรองวันที่" style="display: none;">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="sort-group">
+            <label for="gallery-sort-select" class="filter-label">
+              <i class="fa-solid fa-arrow-down-wide-short" style="color: var(--primary);"></i> เรียงลำดับ:
+            </label>
+            <select id="gallery-sort-select" class="gallery-sort-select">
+              <option value="newest">วันที่ล่าสุดก่อน ⬇️</option>
+              <option value="oldest">วันที่เก่าสุดก่อน ⬆️</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="gallery-count-badge" id="gallery-count-badge">
+          พบ 0 รูปภาพ
+        </div>
+      </div>
+
+      <!-- Polaroid Grid (Max 9 per page) -->
       <div class="gallery-grid" id="gallery-grid">
+        <!-- Rendered dynamically via JavaScript -->
+      </div>
+
+      <!-- Pagination System -->
+      <div class="pagination-container" id="gallery-pagination">
         <!-- Rendered dynamically via JavaScript -->
       </div>
     </section>
@@ -264,7 +300,9 @@
       <form id="bucket-form" onsubmit="return false;">
         <div style="display: flex; flex-direction: column; gap: 14px;">
           <div>
-            <label style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">สิ่งที่เราอยากทำด้วยกัน 💕</label>
+            <label
+              style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">สิ่งที่เราอยากทำด้วยกัน
+              💕</label>
             <input type="text" id="bucket-text-input" placeholder="เช่น ไปเที่ยวดูแสงเหนือด้วยกัน 🌌" required>
           </div>
 

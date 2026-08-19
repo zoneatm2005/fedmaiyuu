@@ -97,7 +97,11 @@ body {
 }
 
 /* --- Typography Helpers --- */
-h1, h2, h3, h4, .cute-font {
+h1,
+h2,
+h3,
+h4,
+.cute-font {
   font-family: var(--font-heading);
 }
 
@@ -151,7 +155,10 @@ h1, h2, h3, h4, .cute-font {
   padding: 0;
 }
 
-input[type="text"], input[type="date"], textarea, select {
+input[type="text"],
+input[type="date"],
+textarea,
+select {
   font-family: var(--font-body);
   width: 100%;
   padding: 12px 18px;
@@ -164,7 +171,9 @@ input[type="text"], input[type="date"], textarea, select {
   transition: all 0.25s ease;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   border-color: var(--primary);
   background: white;
   box-shadow: 0 0 0 4px rgba(255, 107, 139, 0.15);
@@ -208,8 +217,15 @@ input:focus, textarea:focus, select:focus {
 }
 
 @keyframes floatCard {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 .lock-icon-wrapper {
@@ -227,8 +243,15 @@ input:focus, textarea:focus, select:focus {
 }
 
 @keyframes pulseHeart {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .lock-title {
@@ -272,10 +295,27 @@ input:focus, textarea:focus, select:focus {
 }
 
 @keyframes shake {
-  10%, 90% { transform: translate3d(-1px, 0, 0); }
-  20%, 80% { transform: translate3d(2px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-  40%, 60% { transform: translate3d(4px, 0, 0); }
+
+  10%,
+  90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(4px, 0, 0);
+  }
 }
 
 /* ==========================================================================
@@ -441,7 +481,8 @@ input:focus, textarea:focus, select:focus {
   transition: all 0.3s ease;
 }
 
-.nav-tab.active, .nav-tab:hover {
+.nav-tab.active,
+.nav-tab:hover {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
@@ -458,8 +499,15 @@ input:focus, textarea:focus, select:focus {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ==========================================================================
@@ -493,9 +541,120 @@ input:focus, textarea:focus, select:focus {
   transition: all 0.2s ease;
 }
 
-.filter-chip.active, .filter-chip:hover {
+.filter-chip.active,
+.filter-chip:hover {
   background: var(--primary);
   color: white;
+}
+
+/* Date Filter & Sorting Toolbar */
+.gallery-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1.5px solid var(--card-border);
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(255, 107, 139, 0.08);
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.date-filter-group,
+.sort-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.date-input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.gallery-date-input {
+  width: auto !important;
+  min-width: 145px;
+  padding: 6px 30px 6px 12px !important;
+  font-size: 0.88rem !important;
+  border-radius: 50px !important;
+  border: 1.5px solid rgba(255, 107, 139, 0.25) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  cursor: pointer;
+}
+
+.gallery-date-input:focus {
+  border-color: var(--primary) !important;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 107, 139, 0.15);
+  border: none;
+  color: var(--primary);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.gallery-sort-select {
+  width: auto !important;
+  padding: 6px 14px !important;
+  font-size: 0.88rem !important;
+  border-radius: 50px !important;
+  border: 1.5px solid rgba(255, 107, 139, 0.25) !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  cursor: pointer;
+}
+
+.gallery-count-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 5px 14px;
+  border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(255, 107, 139, 0.2);
 }
 
 /* Polaroid Grid */
@@ -637,6 +796,110 @@ input:focus, textarea:focus, select:focus {
 .empty-icon {
   font-size: 3.5rem;
   margin-bottom: 10px;
+}
+
+/* Pagination System */
+.pagination-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+
+.pagination-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1.5px solid var(--card-border);
+  box-shadow: 0 4px 15px rgba(255, 107, 139, 0.1);
+}
+
+.page-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 107, 139, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-dark);
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.page-nav-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 139, 0.3);
+}
+
+.page-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.pagination-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 107, 139, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-dark);
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.page-num:hover:not(.active) {
+  background: var(--primary-light);
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.page-num.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: white;
+  border-color: transparent;
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(255, 107, 139, 0.35);
+}
+
+.page-ellipsis {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.pagination-info-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 /* ==========================================================================
@@ -876,6 +1139,40 @@ input:focus, textarea:focus, select:focus {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .gallery-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .date-filter-group,
+  .sort-group {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .gallery-date-input,
+  .gallery-sort-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gallery-count-badge {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .pagination-wrapper {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
   .timeline-container::before {
     left: 20px;
   }
@@ -957,9 +1254,9 @@ input:focus, textarea:focus, select:focus {
     opacity: 0;
     transform: translateY(30px) scale(0.85);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
-
