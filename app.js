@@ -71,11 +71,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (rawDB) deletedBucketIds = JSON.parse(rawDB);
   } catch (e) { }
 
-
   // --- DOM ELEMENTS ---
   const lockScreen = document.getElementById('lock-screen');
-  const lockForm = document.getElementById('lock-form');
-  const passInput = document.getElementById('anniversary-pass-input');
+  const pinDots = document.querySelectorAll('.pin-dot');
+  const pinKeypad = document.getElementById('pin-keypad');
   const hintToggle = document.getElementById('hint-toggle');
   const hintText = document.getElementById('hint-text');
 
@@ -127,8 +126,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const ITEMS_PER_PAGE = 9;
   let counterInterval = null;
 
+  // --- PIN LOCK SYSTEM STATE ---
+  let enteredPin = '';
+  const PIN_LENGTH = 6;
+  const VALID_PINS = ['020869',];
+
   // ==========================================================================
-  // 1. INITIALIZATION & PASSCODE UNLOCK LOGIC
+  // 1. INITIALIZATION & PIN PASSCODE UNLOCK LOGIC
   // ==========================================================================
 
   function initApp() {
@@ -144,7 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
       startLoveCounter();
     } else {
       lockScreen.classList.remove('unlocked');
-      passInput.value = '';
+      enteredPin = '';
+      updatePinDots();
     }
 
     // Render Components
@@ -161,37 +166,112 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeartsCanvas();
   }
 
-  // Check Passcode Login (Target: 02082569)
-  const VALID_PASSCODES = ['02082569', '02082026', '2026-08-02', '02/08/2569', '02/08/2026'];
+  // --- PIN SYSTEM HANDLERS ---
+  function updatePinDots() {
+    pinDots.forEach((dot, index) => {
+      if (index < enteredPin.length) {
+        dot.classList.add('filled');
+      } else {
+        dot.classList.remove('filled', 'error', 'success');
+      }
+    });
+  }
 
-  lockForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const enteredPass = (passInput.value || '').trim();
-    const cleanEntered = enteredPass.replace(/[\/\-\s]/g, '');
+  function handlePinInput(digit) {
+    if (config.unlocked) return;
+    if (enteredPin.length >= PIN_LENGTH) return;
 
-    if (
-      cleanEntered === '02082569' || 
-      VALID_PASSCODES.includes(enteredPass) || 
-      VALID_PASSCODES.map(p => p.replace(/[\/\-\s]/g, '')).includes(cleanEntered)
-    ) {
+    enteredPin += digit;
+    updatePinDots();
+
+    if (enteredPin.length === PIN_LENGTH) {
+      setTimeout(verifyPin, 180);
+    }
+  }
+
+  function handlePinBackspace() {
+    if (config.unlocked) return;
+    if (enteredPin.length > 0) {
+      enteredPin = enteredPin.slice(0, -1);
+      updatePinDots();
+    }
+  }
+
+  function handlePinClear() {
+    if (config.unlocked) return;
+    enteredPin = '';
+    updatePinDots();
+  }
+
+  function verifyPin() {
+    if (VALID_PINS.includes(enteredPin)) {
       // SUCCESS: Unlock!
+      pinDots.forEach(dot => dot.classList.add('success'));
       config.unlocked = true;
       sessionStorage.setItem('love_unlocked', 'true');
 
       // Heart burst effect
-      spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 30);
+      spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 35);
 
-      lockScreen.classList.add('unlocked');
-      startLoveCounter();
-      showToast('ปลดล็อกสำเร็จแล้ว ยินดีต้อนรับนะคะ 💕', 'success');
+      setTimeout(() => {
+        lockScreen.classList.add('unlocked');
+        startLoveCounter();
+        showToast('ปลดล็อกสำเร็จแล้ว ยินดีต้อนรับนะคะ 💕', 'success');
+      }, 350);
     } else {
-      // ERROR: Shake Card
+      // ERROR: Shake & Feedback
+      pinDots.forEach(dot => dot.classList.add('error'));
       const lockCard = document.querySelector('.lock-card');
-      lockCard.classList.add('error-shake');
-      setTimeout(() => lockCard.classList.remove('error-shake'), 600);
+      if (lockCard) {
+        lockCard.classList.add('error-shake');
+        setTimeout(() => lockCard.classList.remove('error-shake'), 600);
+      }
+      showToast(' รหัสผิด จำไม่ได้หรอ🥺 ', 'error', 3500);
 
-      alert('💔 รหัสผ่านไม่ถูกนะ 💕');
-      passInput.focus();
+      setTimeout(() => {
+        enteredPin = '';
+        updatePinDots();
+      }, 650);
+    }
+  }
+
+  // Keypad Click Event Delegation
+  if (pinKeypad) {
+    pinKeypad.addEventListener('click', (e) => {
+      const btn = e.target.closest('.pin-btn');
+      if (!btn) return;
+
+      btn.classList.add('pressed');
+      setTimeout(() => btn.classList.remove('pressed'), 150);
+
+      const key = btn.dataset.key;
+      const action = btn.dataset.action;
+
+      if (key !== undefined) {
+        handlePinInput(key);
+      } else if (action === 'backspace') {
+        handlePinBackspace();
+      } else if (action === 'clear') {
+        handlePinClear();
+      }
+    });
+  }
+
+  // Hardware Keyboard Support
+  window.addEventListener('keydown', (e) => {
+    if (config.unlocked) return;
+
+    if (e.key >= '0' && e.key <= '9') {
+      handlePinInput(e.key);
+      const keyBtn = document.querySelector(`.pin-btn[data-key="${e.key}"]`);
+      if (keyBtn) {
+        keyBtn.classList.add('pressed');
+        setTimeout(() => keyBtn.classList.remove('pressed'), 150);
+      }
+    } else if (e.key === 'Backspace') {
+      handlePinBackspace();
+    } else if (e.key === 'Escape' || e.key === 'Delete') {
+      handlePinClear();
     }
   });
 
@@ -204,10 +284,10 @@ document.addEventListener('DOMContentLoaded', () => {
   lockAppBtn.addEventListener('click', () => {
     config.unlocked = false;
     sessionStorage.removeItem('love_unlocked');
-    passInput.value = '';
+    enteredPin = '';
+    updatePinDots();
     lockScreen.classList.remove('unlocked');
     if (counterInterval) clearInterval(counterInterval);
-    setTimeout(() => { if (passInput) passInput.focus(); }, 300);
   });
 
   // ==========================================================================

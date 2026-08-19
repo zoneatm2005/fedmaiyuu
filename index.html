@@ -22,40 +22,48 @@
        1. LOCK SCREEN (ANNIVERSARY PASSCODE LOGIN)
        ========================================================================== -->
   <div id="lock-screen">
-    <div class="lock-card">
+    <div class="lock-card pin-lock-card">
       <div class="lock-icon-wrapper">
         💖
       </div>
       <h1 class="lock-title">Freshmaiyuu</h1>
-      <p class="lock-subtitle">ใส่รหัสผ่านเพื่อปลดล็อกความหวานนะคะ 💕</p>
+      <p class="lock-subtitle">กรอกรหัส PIN วันที่เราคบกัน 💕</p>
 
-      <form id="lock-form" onsubmit="return false;">
-        <div class="passcode-input-container">
-          <div class="passcode-input-wrapper">
-            <i class="fa-solid fa-key passcode-icon"></i>
-            <input 
-              type="text" 
-              id="anniversary-pass-input" 
-              class="passcode-input-styled" 
-              placeholder="วันที่คบกันค้าบที่รัก" 
-              maxlength="10"
-              autocomplete="off"
-              inputmode="numeric"
-              required
-            >
-          </div>
-        </div>
+      <!-- 8-Digit PIN Dots Display -->
+      <div class="pin-dots-container" id="pin-dots-container">
+        <div class="pin-dot" data-index="0"></div>
+        <div class="pin-dot" data-index="1"></div>
+        <div class="pin-dot" data-index="2"></div>
+        <div class="pin-dot" data-index="3"></div>
+        <div class="pin-dot" data-index="4"></div>
+        <div class="pin-dot" data-index="5"></div>
+      </div>
 
-        <button type="submit" id="unlock-btn" class="btn btn-primary" style="width: 100%;">
-          <i class="fa-solid fa-heart"></i> ปลดล็อกหัวใจ
+      <!-- PIN Keypad -->
+      <div class="pin-keypad" id="pin-keypad">
+        <button type="button" class="pin-btn" data-key="1">1</button>
+        <button type="button" class="pin-btn" data-key="2">2</button>
+        <button type="button" class="pin-btn" data-key="3">3</button>
+        <button type="button" class="pin-btn" data-key="4">4</button>
+        <button type="button" class="pin-btn" data-key="5">5</button>
+        <button type="button" class="pin-btn" data-key="6">6</button>
+        <button type="button" class="pin-btn" data-key="7">7</button>
+        <button type="button" class="pin-btn" data-key="8">8</button>
+        <button type="button" class="pin-btn" data-key="9">9</button>
+        <button type="button" class="pin-btn pin-btn-action" data-action="clear" title="ล้างทั้งหมด">
+          <span style="font-size: 0.92rem;">ล้าง</span>
         </button>
-      </form>
+        <button type="button" class="pin-btn" data-key="0">0</button>
+        <button type="button" class="pin-btn pin-btn-action" data-action="backspace" title="ลบ">
+          <i class="fa-solid fa-delete-left"></i>
+        </button>
+      </div>
 
       <p class="passcode-hint" id="hint-toggle">
         <i class="fa-regular fa-lightbulb"></i> คำใบ้รหัสผ่าน
       </p>
       <p id="hint-text" style="display: none; margin-top: 8px; font-size: 0.88rem; color: var(--primary);">
-        รหัสผ่านคือ <b>02082569</b> (วันที่เราคบกัน)
+        รหัส PIN 8 หลักคือ <b>วันที่เราคบกัน</b>
       </p>
     </div>
   </div>
@@ -204,7 +212,7 @@
     <section id="tab-bucket" class="tab-content">
       <div class="bucket-card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h2><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> สิ่งที่เราอยากทำด้วยกัน</h2>
+          <h2><i class="fa-solid fa-list-check" style="color: var(--primary);"></i> สิ่งที่อยากทำด้วยกัน</h2>
           <button id="add-bucket-btn" class="btn btn-secondary btn-icon">
             <i class="fa-solid fa-plus"></i>
           </button>
