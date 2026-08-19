@@ -129,8 +129,8 @@
       <button class="nav-tab active" data-tab="tab-gallery">
         <i class="fa-solid fa-images"></i> อัลบั้มรูปความทรงจำ
       </button>
-      <button class="nav-tab" data-tab="tab-timeline">
-        <i class="fa-solid fa-timeline"></i> ไทม์ไลน์เรื่องราวของเรา
+      <button class="nav-tab" data-tab="tab-calendar">
+        <i class="fa-solid fa-calendar-days"></i> ปฏิทินเรื่องราวของเรา
       </button>
       <button class="nav-tab" data-tab="tab-bucket">
         <i class="fa-solid fa-heart-circle-check"></i> ลิสต์คู่
@@ -198,11 +198,65 @@
     </section>
 
     <!-- ==========================================================================
-         TAB 2: LOVE STORY TIMELINE
+         TAB 2: LOVE CALENDAR & DAILY DIARY
          ========================================================================== -->
-    <section id="tab-timeline" class="tab-content">
-      <div class="timeline-container" id="timeline-list">
-        <!-- Rendered dynamically via JavaScript -->
+    <section id="tab-calendar" class="tab-content">
+      <div class="calendar-wrapper-card">
+        <!-- Aesthetic Scrapbook Decors -->
+        <div class="scrapbook-decor decor-top-left" title="✈️ ทริปเที่ยวของเรา">
+          <span class="decor-icon">✈️</span>
+          <div class="tape-strip"></div>
+        </div>
+        <div class="scrapbook-decor decor-bottom-right" title="📷 ความทรงจำแสนหวาน">
+          <span class="decor-icon">📷</span>
+          <div class="stamp-badge">LOVE</div>
+        </div>
+
+        <!-- Month Navigation Bar -->
+        <div class="calendar-header-bar">
+          <div class="cal-nav-group">
+            <button id="cal-prev-btn" class="cal-nav-btn" title="เดือนก่อนหน้า">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h2 class="cal-month-title" id="cal-month-title">พฤษภาคม 2569</h2>
+            <button id="cal-next-btn" class="cal-nav-btn" title="เดือนถัดไป">
+              <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+
+          <div class="cal-actions-group">
+            <button id="cal-today-btn" class="btn btn-secondary btn-sm-cute" title="ไปยังเดือนปัจจุบัน">
+              <i class="fa-solid fa-calendar-day"></i> วันนี้
+            </button>
+            <button id="cal-add-entry-btn" class="btn btn-primary btn-sm-cute" title="เพิ่มบันทึกว่าวันนี้ทำอะไร">
+              <i class="fa-solid fa-pen-to-square"></i> + เขียนบันทึกวันนี้
+            </button>
+          </div>
+        </div>
+
+        <!-- Weekdays Header Row (Sun - Sat) -->
+        <div class="calendar-weekdays-grid">
+          <div class="weekday-header sunday">อา.</div>
+          <div class="weekday-header">จ.</div>
+          <div class="weekday-header">อ.</div>
+          <div class="weekday-header">พ.</div>
+          <div class="weekday-header">พฤ.</div>
+          <div class="weekday-header">ศ.</div>
+          <div class="weekday-header saturday">ส.</div>
+        </div>
+
+        <!-- 7-Column Days Grid -->
+        <div class="calendar-days-grid" id="calendar-days-grid">
+          <!-- Rendered dynamically via JavaScript -->
+        </div>
+
+        <!-- Calendar Status Legend -->
+        <div class="calendar-legend">
+          <div class="legend-item"><span class="legend-dot today-dot"></span> วันนี้</div>
+          <div class="legend-item"><span class="legend-dot anniversary-dot"></span> วันครบรอบ 💕</div>
+          <div class="legend-item"><span class="legend-dot entry-dot"></span> มีบันทึกกิจกรรม 📝</div>
+          <div class="legend-item"><span class="legend-dot photo-dot"></span> มีรูปถ่าย 📸</div>
+        </div>
       </div>
     </section>
 
@@ -331,6 +385,87 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 4: CALENDAR DAY DETAIL & DIARY ENTRY MODAL
+       ========================================================================== -->
+  <div class="modal-overlay" id="calendar-modal">
+    <div class="modal-box cal-day-modal">
+      <button class="modal-close" id="close-calendar-modal">&times;</button>
+
+      <div class="cal-modal-header">
+        <div class="cal-modal-date-badge" id="cal-modal-badge">📅 19 สิงหาคม 2569</div>
+        <h2 id="cal-modal-title" class="cal-modal-heading">บันทึกกิจกรรมประจำวัน 💕</h2>
+      </div>
+
+      <!-- Existing Entries for this Day -->
+      <div class="cal-modal-entries-section">
+        <h4 class="cal-section-subtitle">
+          <i class="fa-solid fa-list-check" style="color: var(--primary);"></i> กิจกรรมที่ทำในวันนี้:
+        </h4>
+        <div class="cal-entries-list" id="cal-modal-entries-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Photos on this Date Section (if any) -->
+      <div class="cal-modal-photos-section" id="cal-modal-photos-section" style="display: none;">
+        <h4 class="cal-section-subtitle">
+          <i class="fa-solid fa-images" style="color: var(--primary);"></i> รูปภาพความทรงจำในวันนี้:
+        </h4>
+        <div class="cal-photos-strip" id="cal-modal-photos-strip">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <!-- Form to Add/Edit Entry for this Day -->
+      <div class="cal-modal-form-section">
+        <h4 class="cal-section-subtitle" id="cal-form-heading">
+          <i class="fa-solid fa-pen-fancy" style="color: var(--primary);"></i> เขียนบันทึกใหม่:
+        </h4>
+        <form id="calendar-entry-form" onsubmit="return false;">
+          <input type="hidden" id="cal-entry-id" value="">
+          <input type="hidden" id="cal-entry-date" value="">
+
+          <!-- Quick Mood / Activity Emoji Selector -->
+          <div class="mood-selector-group">
+            <label class="form-label">เลือกสติกเกอร์ / หมวดหมู่กิจกรรม:</label>
+            <div class="mood-chips-container" id="mood-chips-container">
+              <button type="button" class="mood-chip active" data-mood="💖" data-cat="date">💖 เดต</button>
+              <button type="button" class="mood-chip" data-mood="🍲" data-cat="food">🍲 กินข้าว</button>
+              <button type="button" class="mood-chip" data-mood="✈️" data-cat="trip">✈️ เที่ยว</button>
+              <button type="button" class="mood-chip" data-mood="🍿" data-cat="movie">🍿 ดูหนัง</button>
+              <button type="button" class="mood-chip" data-mood="☕" data-cat="cafe">☕ คาเฟ่</button>
+              <button type="button" class="mood-chip" data-mood="🛍️" data-cat="shopping">🛍️ ช้อปปิ้ง</button>
+              <button type="button" class="mood-chip" data-mood="🎮" data-cat="game">🎮 เล่นเกม</button>
+              <button type="button" class="mood-chip" data-mood="📝" data-cat="diary">📝 ไดอารี่</button>
+              <button type="button" class="mood-chip" data-mood="🎁" data-cat="special">🎁 วันพิเศษ</button>
+              <button type="button" class="mood-chip" data-mood="🐱" data-cat="cute">🐱 น้อนๆ</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <label class="form-label" for="cal-entry-title">วันนี้ทำอะไร (หัวข้อกิจกรรม) *</label>
+            <input type="text" id="cal-entry-title" placeholder="เช่น ไปกินชาบูกับเธอที่ร้านโปรด 🍲" required>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <label class="form-label" for="cal-entry-content">รายละเอียด / ความรู้สึกหวานๆ</label>
+            <textarea id="cal-entry-content" rows="3" placeholder="เขียนบันทึกความรู้สึก หรือเรื่องราวที่เกิดขึ้นในวันนี้..."></textarea>
+          </div>
+
+          <div class="cal-form-actions" style="margin-top: 16px; display: flex; gap: 10px;">
+            <button type="submit" id="cal-submit-btn" class="btn btn-primary" style="flex: 1;">
+              <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกลง Supabase
+            </button>
+            <button type="button" id="cal-cancel-edit-btn" class="btn btn-secondary" style="display: none;">
+              ยกเลิก
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 

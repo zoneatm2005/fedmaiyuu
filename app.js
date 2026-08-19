@@ -58,6 +58,23 @@ document.addEventListener('DOMContentLoaded', () => {
   let bucketList = Array.isArray(savedBucket) ? savedBucket : [];
   try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) { }
 
+  // --- CALENDAR STATE & STORAGE ---
+  let savedCalendar = null;
+  try {
+    const rawC = localStorage.getItem('love_calendar');
+    if (rawC) {
+      const parsedC = JSON.parse(rawC);
+      if (Array.isArray(parsedC)) {
+        savedCalendar = parsedC;
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  let calendarNotes = Array.isArray(savedCalendar) ? savedCalendar : [];
+  try { localStorage.setItem('love_calendar', JSON.stringify(calendarNotes)); } catch (e) { }
+
   // --- TRACK DELETED ITEMS TO PREVENT RE-SYNC RESTORATION ---
   let deletedPhotoIds = [];
   try {
@@ -70,6 +87,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawDB = localStorage.getItem('love_deleted_bucket');
     if (rawDB) deletedBucketIds = JSON.parse(rawDB);
   } catch (e) { }
+
+  let deletedCalendarIds = [];
+  try {
+    const rawDC = localStorage.getItem('love_deleted_calendar');
+    if (rawDC) deletedCalendarIds = JSON.parse(rawDC);
+  } catch (e) { }
+
+  // Calendar State & Localization
+  const now = new Date();
+  let currentCalYear = now.getFullYear();
+  let currentCalMonth = now.getMonth(); // 0-11
+  let activeSelectedDate = null;
+  let activeSelectedMood = '💖';
+  let activeSelectedCategory = 'date';
+  let editingCalendarEntryId = null;
+
+  const THAI_MONTHS = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+
+  const THAI_DAYS_FULL = [
+    'วันอาทิตย์', 'วันจันทร์', 'วันอังคาร', 'วันพุธ', 'วันพฤหัสบดี', 'วันศุกร์', 'วันเสาร์'
+  ];
 
   // --- DOM ELEMENTS ---
   const lockScreen = document.getElementById('lock-screen');
@@ -118,6 +159,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const bucketListContainer = document.getElementById('bucket-list-container');
   const addBucketBtn = document.getElementById('add-bucket-btn');
 
+  // Calendar DOM Elements
+  const calMonthTitle = document.getElementById('cal-month-title');
+  const calPrevBtn = document.getElementById('cal-prev-btn');
+  const calNextBtn = document.getElementById('cal-next-btn');
+  const calTodayBtn = document.getElementById('cal-today-btn');
+  const calAddEntryBtn = document.getElementById('cal-add-entry-btn');
+  const calendarDaysGrid = document.getElementById('calendar-days-grid');
+
+  // Calendar Modal DOM Elements
+  const calendarModal = document.getElementById('calendar-modal');
+  const closeCalendarModal = document.getElementById('close-calendar-modal');
+  const calModalBadge = document.getElementById('cal-modal-badge');
+  const calModalTitle = document.getElementById('cal-modal-title');
+  const calModalEntriesList = document.getElementById('cal-modal-entries-list');
+  const calModalPhotosSection = document.getElementById('cal-modal-photos-section');
+  const calModalPhotosStrip = document.getElementById('cal-modal-photos-strip');
+  const calFormHeading = document.getElementById('cal-form-heading');
+  const calendarEntryForm = document.getElementById('calendar-entry-form');
+  const calEntryId = document.getElementById('cal-entry-id');
+  const calEntryDate = document.getElementById('cal-entry-date');
+  const calEntryTitle = document.getElementById('cal-entry-title');
+  const calEntryContent = document.getElementById('cal-entry-content');
+  const calSubmitBtn = document.getElementById('cal-submit-btn');
+  const calCancelEditBtn = document.getElementById('cal-cancel-edit-btn');
+  const moodChips = document.querySelectorAll('.mood-chip');
+
   let activePhotoDataUrl = null;
   let currentFilter = 'all';
   let currentDateFilter = '';
@@ -154,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render Components
     renderGallery();
-    renderTimeline();
+    renderCalendar();
     renderBucketList();
 
     // Start Online Realtime Cloud Data Sync (Supabase WebSockets & Fallback)
@@ -753,7 +820,7 @@ document.addEventListener('DOMContentLoaded', () => {
     photos.unshift(newPhoto); // Add to top locally
     currentPage = 1;
     renderGallery();
-    renderTimeline();
+    renderCalendar();
 
     // Close Modal immediately for smooth UI
     uploadModal.classList.remove('active');
@@ -783,7 +850,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     photos = photos.filter(p => p.id !== id);
     renderGallery();
-    renderTimeline();
+    renderCalendar();
 
     // Explicitly delete from Supabase love_memories table
     if (supabase) {
@@ -807,6 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       let cloudPhotos = null;
       let cloudBucket = null;
+      let cloudCalendar = null;
 
       // 1. Try Supabase JS Client (Separate Tables or Shared JSON)
       if (supabase) {
@@ -834,12 +902,27 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
           }
 
+          // Check love_calendar table
+          const { data: calRows } = await supabase.from('love_calendar').select('*');
+          if (Array.isArray(calRows) && calRows.length > 0) {
+            cloudCalendar = calRows.map(r => ({
+              id: String(r.id),
+              date: r.date,
+              title: r.title,
+              content: r.content || '',
+              mood: r.mood || '💖',
+              category: r.category || 'date',
+              updatedAt: r.updated_at ? new Date(r.updated_at).getTime() : Date.now()
+            }));
+          }
+
           // Check unified love_data table
-          if (!cloudPhotos || !cloudBucket) {
+          if (!cloudPhotos || !cloudBucket || !cloudCalendar) {
             const { data: rows } = await supabase.from('love_data').select('data').eq('id', 'shared_app_data');
             if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
               if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
               if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
+              if (!cloudCalendar && Array.isArray(rows[0].data.calendarNotes)) cloudCalendar = rows[0].data.calendarNotes;
             }
           }
         } catch (err) {
@@ -848,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // 2. Try Supabase REST API Fallback
-      if (!cloudPhotos || !cloudBucket) {
+      if (!cloudPhotos || !cloudBucket || !cloudCalendar) {
         try {
           const res = await fetch(`${SUPABASE_URL}/rest/v1/love_data?id=eq.shared_app_data&select=data`, {
             headers: {
@@ -861,13 +944,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
               if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
               if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
+              if (!cloudCalendar && Array.isArray(rows[0].data.calendarNotes)) cloudCalendar = rows[0].data.calendarNotes;
             }
           }
         } catch (err) { }
       }
 
       // 3. Fallback Online Store if Supabase is still connecting
-      if (!cloudPhotos && !cloudBucket) {
+      if (!cloudPhotos && !cloudBucket && !cloudCalendar) {
         try {
           const res = await fetch(FALLBACK_SYNC_URL);
           if (res.ok) {
@@ -875,6 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && typeof data === 'object') {
               if (Array.isArray(data.photos)) cloudPhotos = data.photos;
               if (Array.isArray(data.bucketList)) cloudBucket = data.bucketList;
+              if (Array.isArray(data.calendarNotes)) cloudCalendar = data.calendarNotes;
             }
           }
         } catch (err) { }
@@ -905,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
           photos = mergedPhotos;
           try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) { }
           renderGallery();
-          renderTimeline();
+          renderCalendar();
           updated = true;
         }
       }
@@ -935,6 +1020,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
 
+      if (Array.isArray(cloudCalendar)) {
+        const cleanCloudCal = cloudCalendar.filter(c => !deletedCalendarIds.includes(c.id));
+        const activeLocalCal = calendarNotes.filter(c => !deletedCalendarIds.includes(c.id));
+
+        const mergedCalMap = new Map();
+        cleanCloudCal.forEach(c => mergedCalMap.set(c.id, c));
+        activeLocalCal.forEach(c => {
+          if (!mergedCalMap.has(c.id)) {
+            mergedCalMap.set(c.id, c);
+          }
+        });
+
+        const mergedCal = Array.from(mergedCalMap.values());
+        if (JSON.stringify(mergedCal) !== JSON.stringify(calendarNotes)) {
+          calendarNotes = mergedCal;
+          try { localStorage.setItem('love_calendar', JSON.stringify(calendarNotes)); } catch (e) { }
+          renderCalendar();
+          if (activeSelectedDate && calendarModal && calendarModal.classList.contains('active')) {
+            renderModalEntriesForDate(activeSelectedDate);
+          }
+          updated = true;
+        }
+      }
+
       updateSyncBadge('success');
     } catch (e) {
       console.warn('Sync fetch warning:', e);
@@ -949,6 +1058,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const payload = {
         photos: photos,
         bucketList: bucketList,
+        calendarNotes: calendarNotes,
         lastUpdated: Date.now()
       };
 
@@ -988,6 +1098,20 @@ document.addEventListener('DOMContentLoaded', () => {
               updated_at: new Date().toISOString()
             }));
             await supabase.from('love_bucket').upsert(bucketRows);
+          }
+
+          // Attempt love_calendar table upsert
+          if (calendarNotes.length > 0) {
+            const calRows = calendarNotes.map(c => ({
+              id: String(c.id),
+              date: c.date,
+              title: c.title || '',
+              content: c.content || '',
+              mood: c.mood || '💖',
+              category: c.category || 'date',
+              updated_at: new Date().toISOString()
+            }));
+            await supabase.from('love_calendar').upsert(calRows);
           }
         }
 
@@ -1047,6 +1171,9 @@ document.addEventListener('DOMContentLoaded', () => {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'love_bucket' }, () => {
           syncFromCloud();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'love_calendar' }, () => {
+          syncFromCloud();
+        })
         .subscribe();
     } catch (e) {
       console.warn('Supabase Realtime subscription warning:', e);
@@ -1064,6 +1191,20 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast('บันทึกรูปภาพความทรงจำลง Supabase เรียบร้อยแล้ว 💕', 'success');
     } else {
       showToast('บันทึกไว้ในอุปกรณ์เรียบร้อยแล้ว (จะซิงก์ขึ้น Supabase เมื่อออนไลน์)', 'info');
+    }
+  }
+
+  async function saveCalendarNotes() {
+    try {
+      localStorage.setItem('love_calendar', JSON.stringify(calendarNotes));
+    } catch (err) {
+      console.warn('LocalStorage limit:', err);
+    }
+    const success = await pushToCloud();
+    if (success) {
+      showToast('บันทึกข้อมูลปฏิทินลง Supabase เรียบร้อยแล้ว 💕', 'success');
+    } else {
+      showToast('บันทึกในอุปกรณ์เรียบร้อยแล้ว (จะซิงก์ขึ้น Supabase เมื่อออนไลน์)', 'info');
     }
   }
 
@@ -1098,37 +1239,464 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ==========================================================================
-  // 4. TIMELINE & BUCKET LIST
+  // 4. LOVE CALENDAR & DAILY DIARY SYSTEM (SCRAPBOOK AESTHETIC)
   // ==========================================================================
 
-  function renderTimeline() {
-    const timelineList = document.getElementById('timeline-list');
-    timelineList.innerHTML = '';
+  function renderCalendar() {
+    if (!calendarDaysGrid || !calMonthTitle) return;
 
-    const sorted = [...photos].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // 1. Update Month & Year Title in Thai (e.g. "พฤษภาคม 2569")
+    const thaiMonthName = THAI_MONTHS[currentCalMonth];
+    const thaiYearBE = currentCalYear + 543;
+    calMonthTitle.textContent = `${thaiMonthName} ${thaiYearBE}`;
 
-    if (sorted.length === 0) {
-      timelineList.innerHTML = `<p style="text-align: center; color: var(--text-muted);">ยังไม่มีข้อมูลไทม์ไลน์ ให้เพิ่มรูปภาพก่อนครับ 💕</p>`;
+    calendarDaysGrid.innerHTML = '';
+
+    // 2. Compute Dates
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    // Anniversary month/day comparison
+    const anniParts = (config.anniversaryDate || '').split('-');
+    const anniMonthDay = anniParts.length === 3 ? `${anniParts[1]}-${anniParts[2]}` : '';
+
+    // First day of current month (0: Sun, 1: Mon, ..., 6: Sat)
+    const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
+    // Total days in current month
+    const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+    // Total days in previous month
+    const totalDaysInPrevMonth = new Date(currentCalYear, currentCalMonth, 0).getDate();
+
+    // 3. Render Previous Month Padding Days
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = totalDaysInPrevMonth - i;
+      const prevDate = new Date(currentCalYear, currentCalMonth - 1, dayNum);
+      const dateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+
+      const dayCell = createCalendarDayCell(dayNum, dateStr, true);
+      calendarDaysGrid.appendChild(dayCell);
+    }
+
+    // 4. Render Current Month Days
+    for (let d = 1; d <= totalDaysInMonth; d++) {
+      const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isToday = (dateStr === todayStr);
+      const isAnniversary = (anniMonthDay && dateStr.endsWith(anniMonthDay));
+
+      const dayCell = createCalendarDayCell(d, dateStr, false, isToday, isAnniversary);
+      calendarDaysGrid.appendChild(dayCell);
+    }
+
+    // 5. Render Next Month Padding Days to fill grid (35 or 42 slots)
+    const totalRendered = firstDayIndex + totalDaysInMonth;
+    const totalSlots = totalRendered > 35 ? 42 : 35;
+    const remainingDays = totalSlots - totalRendered;
+
+    for (let nextDay = 1; nextDay <= remainingDays; nextDay++) {
+      const nextDate = new Date(currentCalYear, currentCalMonth + 1, nextDay);
+      const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+
+      const dayCell = createCalendarDayCell(nextDay, dateStr, true);
+      calendarDaysGrid.appendChild(dayCell);
+    }
+  }
+
+  function createCalendarDayCell(dayNum, dateStr, isOtherMonth = false, isToday = false, isAnniversary = false) {
+    const dayCell = document.createElement('div');
+    dayCell.className = `cal-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isAnniversary ? 'anniversary-day' : ''}`;
+    dayCell.dataset.date = dateStr;
+
+    // Day of week class for coloring (Sunday / Saturday)
+    const dObj = new Date(dateStr + 'T00:00:00');
+    const dayOfWeek = dObj.getDay();
+    if (dayOfWeek === 0) dayCell.classList.add('sunday');
+    if (dayOfWeek === 6) dayCell.classList.add('saturday');
+
+    // Get entries for this date
+    const dayEntries = calendarNotes.filter(item => item.date === dateStr);
+    // Get photos for this date
+    const dayPhotos = photos.filter(p => p.date === dateStr);
+
+    let badgesHtml = '';
+    if (isToday) {
+      badgesHtml += `<span class="badge-tag badge-today">วันนี้</span>`;
+    }
+    if (isAnniversary) {
+      badgesHtml += `<span class="badge-tag badge-anni" title="วันครบรอบของเรา 💕">💖 ครบรอบ</span>`;
+    }
+
+    let entriesHtml = '';
+    if (dayEntries.length > 0) {
+      // Show up to 2 entries in the cell
+      const visibleEntries = dayEntries.slice(0, 2);
+      visibleEntries.forEach(entry => {
+        const catClass = entry.category || 'date';
+        entriesHtml += `
+          <div class="cal-entry-chip ${catClass}" title="${escapeHtml(entry.title)}">
+            <span>${entry.mood || '💖'}</span>
+            <span>${escapeHtml(entry.title)}</span>
+          </div>
+        `;
+      });
+
+      if (dayEntries.length > 2) {
+        entriesHtml += `<div class="cal-more-entries">+${dayEntries.length - 2} บันทึกอีก</div>`;
+      }
+    }
+
+    // Photo badge if photos exist on this date
+    let photosBadgeHtml = '';
+    if (dayPhotos.length > 0) {
+      photosBadgeHtml = `
+        <div class="cal-photo-chip" title="มีรูปภาพ ${dayPhotos.length} รูป">
+          <i class="fa-solid fa-camera"></i> ${dayPhotos.length} รูป
+        </div>
+      `;
+    }
+
+    dayCell.innerHTML = `
+      <div class="cal-day-top">
+        <span class="cal-day-number">${dayNum}</span>
+        <div class="cal-day-badges">${badgesHtml}</div>
+      </div>
+      <div class="cal-day-entries">
+        ${entriesHtml}
+        ${photosBadgeHtml}
+      </div>
+      <button type="button" class="cal-cell-add-btn" title="เขียนบันทึกวันที่ ${dayNum}">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+    `;
+
+    // Click anywhere on cell to open date modal
+    dayCell.addEventListener('click', (e) => {
+      openCalendarDayModal(dateStr, e.target.closest('.cal-cell-add-btn') !== null);
+    });
+
+    return dayCell;
+  }
+
+  // --- CALENDAR DAY MODAL & DIARY MANAGEMENT ---
+  function openCalendarDayModal(dateStr, autoFocusInput = false) {
+    if (!calendarModal) return;
+    activeSelectedDate = dateStr;
+
+    // 1. Format Full Thai Date for Modal Header
+    const parts = dateStr.split('-');
+    const yearCE = parseInt(parts[0], 10);
+    const monthNum = parseInt(parts[1], 10) - 1;
+    const dayNum = parseInt(parts[2], 10);
+    const dObj = new Date(yearCE, monthNum, dayNum);
+    const dayName = THAI_DAYS_FULL[dObj.getDay()];
+    const monthName = THAI_MONTHS[monthNum];
+    const yearBE = yearCE + 543;
+
+    if (calModalBadge) {
+      calModalBadge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ${dayName}ที่ ${dayNum} ${monthName} ${yearBE}`;
+    }
+
+    // 2. Render Existing Entries for this Date
+    renderModalEntriesForDate(dateStr);
+
+    // 3. Render Photos taken on this Date (if any)
+    renderModalPhotosForDate(dateStr);
+
+    // 4. Reset Form to New Entry Mode
+    resetCalendarEntryForm(dateStr);
+
+    // 5. Open Modal
+    calendarModal.classList.add('active');
+
+    if (autoFocusInput && calEntryTitle) {
+      setTimeout(() => { calEntryTitle.focus(); }, 200);
+    }
+  }
+
+  function renderModalEntriesForDate(dateStr) {
+    if (!calModalEntriesList) return;
+    calModalEntriesList.innerHTML = '';
+
+    const entries = calendarNotes.filter(item => item.date === dateStr);
+
+    if (entries.length === 0) {
+      calModalEntriesList.innerHTML = `
+        <div style="text-align: center; color: var(--text-muted); padding: 14px; background: rgba(255,255,255,0.7); border-radius: 12px; font-size: 0.92rem;">
+          <p>📝 ยังไม่มีบันทึกสำหรับวันนี้</p>
+          <span style="font-size: 0.82rem;">เขียนกิจกรรมหวานๆ หรือสิ่งที่ทำด้วยกันด้านล่างได้เลย 💕</span>
+        </div>
+      `;
       return;
     }
 
-    sorted.forEach((photo) => {
-      const parts = photo.date.split('-');
-      const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-
-      const item = document.createElement('div');
-      item.className = 'timeline-item';
-      item.innerHTML = `
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
-          <div class="timeline-date">${formattedDate}</div>
-          <h3 style="font-size: 1.15rem; color: var(--text-dark);">${escapeHtml(photo.title)}</h3>
-          <p style="font-size: 0.92rem; color: var(--text-muted); margin-top: 4px;">${escapeHtml(photo.caption)}</p>
+    entries.forEach(entry => {
+      const card = document.createElement('div');
+      card.className = 'cal-entry-card';
+      card.innerHTML = `
+        <div class="cal-entry-main">
+          <div class="cal-entry-header">
+            <span class="cal-entry-emoji">${entry.mood || '💖'}</span>
+            <span class="cal-entry-title-text">${escapeHtml(entry.title)}</span>
+          </div>
+          ${entry.content ? `<div class="cal-entry-desc-text">${escapeHtml(entry.content)}</div>` : ''}
+        </div>
+        <div class="cal-entry-actions">
+          <button type="button" class="cal-entry-btn edit" title="แก้ไขบันทึกนี้">
+            <i class="fa-solid fa-pen"></i>
+          </button>
+          <button type="button" class="cal-entry-btn delete" title="ลบบันทึกนี้">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
         </div>
       `;
-      timelineList.appendChild(item);
+
+      // Edit Button
+      const editBtn = card.querySelector('.cal-entry-btn.edit');
+      editBtn.addEventListener('click', () => {
+        startEditCalendarEntry(entry);
+      });
+
+      // Delete Button
+      const deleteBtn = card.querySelector('.cal-entry-btn.delete');
+      deleteBtn.addEventListener('click', async () => {
+        await deleteCalendarEntry(entry.id);
+      });
+
+      calModalEntriesList.appendChild(card);
     });
   }
+
+  function renderModalPhotosForDate(dateStr) {
+    if (!calModalPhotosSection || !calModalPhotosStrip) return;
+    calModalPhotosStrip.innerHTML = '';
+
+    const dayPhotos = photos.filter(p => p.date === dateStr);
+
+    if (dayPhotos.length === 0) {
+      calModalPhotosSection.style.display = 'none';
+      return;
+    }
+
+    calModalPhotosSection.style.display = 'block';
+    dayPhotos.forEach(photo => {
+      const thumb = document.createElement('img');
+      thumb.className = 'cal-photo-thumb';
+      thumb.src = photo.imageSrc;
+      thumb.alt = photo.title || 'ความทรงจำ';
+      thumb.title = `${photo.title || 'รูปภาพ'} (คลิกเพื่อดูรูปใหญ่)`;
+      thumb.addEventListener('click', () => {
+        openLightbox(photo);
+      });
+      calModalPhotosStrip.appendChild(thumb);
+    });
+  }
+
+  function resetCalendarEntryForm(dateStr = activeSelectedDate) {
+    editingCalendarEntryId = null;
+    if (calEntryId) calEntryId.value = '';
+    if (calEntryDate) calEntryDate.value = dateStr || '';
+    if (calEntryTitle) calEntryTitle.value = '';
+    if (calEntryContent) calEntryContent.value = '';
+
+    if (calFormHeading) {
+      calFormHeading.innerHTML = '<i class="fa-solid fa-pen-fancy" style="color: var(--primary);"></i> เขียนบันทึกใหม่:';
+    }
+    if (calSubmitBtn) {
+      calSubmitBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> บันทึกลง Supabase';
+    }
+    if (calCancelEditBtn) {
+      calCancelEditBtn.style.display = 'none';
+    }
+
+    // Reset default mood
+    activeSelectedMood = '💖';
+    activeSelectedCategory = 'date';
+    moodChips.forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.mood === '💖');
+    });
+  }
+
+  function startEditCalendarEntry(entry) {
+    editingCalendarEntryId = entry.id;
+    if (calEntryId) calEntryId.value = entry.id;
+    if (calEntryDate) calEntryDate.value = entry.date;
+    if (calEntryTitle) {
+      calEntryTitle.value = entry.title || '';
+      calEntryTitle.focus();
+    }
+    if (calEntryContent) calEntryContent.value = entry.content || '';
+
+    activeSelectedMood = entry.mood || '💖';
+    activeSelectedCategory = entry.category || 'date';
+
+    moodChips.forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.mood === activeSelectedMood);
+    });
+
+    if (calFormHeading) {
+      calFormHeading.innerHTML = '<i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> แก้ไขบันทึก:';
+    }
+    if (calSubmitBtn) {
+      calSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> บันทึกการแก้ไข';
+    }
+    if (calCancelEditBtn) {
+      calCancelEditBtn.style.display = 'inline-block';
+    }
+
+    // Scroll form into view inside modal
+    const calFormSection = document.querySelector('.cal-modal-form-section');
+    if (calFormSection) {
+      calFormSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  // Mood selector chip clicks
+  moodChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      moodChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      activeSelectedMood = chip.dataset.mood || '💖';
+      activeSelectedCategory = chip.dataset.cat || 'date';
+    });
+  });
+
+  // Cancel edit button
+  if (calCancelEditBtn) {
+    calCancelEditBtn.addEventListener('click', () => {
+      resetCalendarEntryForm(activeSelectedDate);
+    });
+  }
+
+  // Calendar Entry Form Submit
+  if (calendarEntryForm) {
+    calendarEntryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = (calEntryTitle ? calEntryTitle.value.trim() : '');
+      const content = (calEntryContent ? calEntryContent.value.trim() : '');
+      const targetDate = (calEntryDate && calEntryDate.value) ? calEntryDate.value : activeSelectedDate;
+
+      if (!title) {
+        alert('กรุณาระบุว่าวันนี้ทำอะไรด้วยนะครับ 💕');
+        return;
+      }
+
+      if (editingCalendarEntryId) {
+        // UPDATE EXISTING ENTRY
+        const idx = calendarNotes.findIndex(c => c.id === editingCalendarEntryId);
+        if (idx !== -1) {
+          calendarNotes[idx] = {
+            ...calendarNotes[idx],
+            title: title,
+            content: content,
+            mood: activeSelectedMood,
+            category: activeSelectedCategory,
+            updatedAt: Date.now()
+          };
+        }
+        showToast('อัปเดตบันทึกเรียบร้อยแล้ว ✨', 'success');
+      } else {
+        // CREATE NEW ENTRY
+        const newEntry = {
+          id: 'cal-' + Date.now(),
+          date: targetDate,
+          title: title,
+          content: content,
+          mood: activeSelectedMood,
+          category: activeSelectedCategory,
+          updatedAt: Date.now()
+        };
+        calendarNotes.unshift(newEntry);
+        showToast('เพิ่มบันทึกกิจกรรมเรียบร้อยแล้ว 💕', 'success');
+      }
+
+      // Re-render UI
+      renderCalendar();
+      renderModalEntriesForDate(targetDate);
+      resetCalendarEntryForm(targetDate);
+
+      // Heart burst
+      spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
+
+      // Save to Supabase Cloud & LocalStorage
+      await saveCalendarNotes();
+    });
+  }
+
+  async function deleteCalendarEntry(id) {
+    if (!deletedCalendarIds.includes(id)) {
+      deletedCalendarIds.push(id);
+      try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch (e) { }
+    }
+
+    calendarNotes = calendarNotes.filter(item => item.id !== id);
+
+    // Delete from Supabase love_calendar table
+    if (supabase) {
+      try {
+        await supabase.from('love_calendar').delete().eq('id', String(id));
+      } catch (err) {
+        console.warn('Supabase delete calendar entry error:', err);
+      }
+    }
+
+    renderCalendar();
+    if (activeSelectedDate) {
+      renderModalEntriesForDate(activeSelectedDate);
+    }
+    await saveCalendarNotes();
+    showToast('ลบบันทึกเรียบร้อยแล้ว 🗑️', 'info');
+  }
+
+  // Close calendar modal handlers
+  if (closeCalendarModal) {
+    closeCalendarModal.addEventListener('click', () => {
+      if (calendarModal) calendarModal.classList.remove('active');
+    });
+  }
+
+  // Month Navigation Buttons
+  if (calPrevBtn) {
+    calPrevBtn.addEventListener('click', () => {
+      currentCalMonth--;
+      if (currentCalMonth < 0) {
+        currentCalMonth = 11;
+        currentCalYear--;
+      }
+      renderCalendar();
+    });
+  }
+
+  if (calNextBtn) {
+    calNextBtn.addEventListener('click', () => {
+      currentCalMonth++;
+      if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+      }
+      renderCalendar();
+    });
+  }
+
+  if (calTodayBtn) {
+    calTodayBtn.addEventListener('click', () => {
+      const today = new Date();
+      currentCalYear = today.getFullYear();
+      currentCalMonth = today.getMonth();
+      renderCalendar();
+      showToast('กลับมายังเดือนปัจจุบันแล้ว 📅', 'info');
+    });
+  }
+
+  if (calAddEntryBtn) {
+    calAddEntryBtn.addEventListener('click', () => {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      openCalendarDayModal(todayStr, true);
+    });
+  }
+
+  // ==========================================================================
+  // 5. BUCKET LIST & NAVIGATION
+  // ==========================================================================
 
   function renderBucketList() {
     bucketListContainer.innerHTML = '';
@@ -1224,22 +1792,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ==========================================================================
-  // 5. NAVIGATION & SETTINGS
-  // ==========================================================================
-
+  // Navigation tab switching
   navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       navTabs.forEach(t => t.classList.remove('active'));
       tabContents.forEach(c => c.classList.remove('active'));
 
       tab.classList.add('active');
-      document.getElementById(tab.dataset.tab).classList.add('active');
+      const targetContent = document.getElementById(tab.dataset.tab);
+      if (targetContent) targetContent.classList.add('active');
     });
   });
 
   // Close modals when clicking overlay
-  [uploadModal, lightboxModal, bucketModal].forEach(modal => {
+  [uploadModal, lightboxModal, bucketModal, calendarModal].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('active');
