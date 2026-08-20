@@ -1367,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dayPhotos.length > 0) {
       photosBadgeHtml = `
         <div class="cal-photo-chip" title="มีรูปภาพ ${dayPhotos.length} รูป">
-          <i class="fa-solid fa-camera"></i> ${dayPhotos.length} รูป
+          <i class="fa-solid fa-camera"></i> <span class="cal-photo-chip-text">${dayPhotos.length} รูป</span>
         </div>
       `;
     }
