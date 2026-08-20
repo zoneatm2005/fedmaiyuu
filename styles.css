@@ -1268,6 +1268,8 @@ select:focus {
   gap: 4px;
   flex: 1;
   overflow: hidden;
+  min-width: 0;
+  width: 100%;
 }
 
 .cal-entry-chip {
@@ -1286,6 +1288,21 @@ select:focus {
   align-items: center;
   gap: 4px;
   line-height: 1.2;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.cal-entry-chip-emoji {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.cal-entry-chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .cal-entry-chip.food {
@@ -1319,6 +1336,10 @@ select:focus {
   border-radius: 4px;
   margin-top: 2px;
   width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cal-more-entries {
@@ -1434,7 +1455,7 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 220px;
+  max-height: 250px;
   overflow-y: auto;
   padding-right: 4px;
   margin-bottom: 18px;
@@ -1442,13 +1463,13 @@ select:focus {
 
 .cal-entry-card {
   background: #faf7f8;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 107, 139, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   transition: all 0.2s ease;
 }
 
@@ -1460,36 +1481,55 @@ select:focus {
 
 .cal-entry-main {
   flex: 1;
+  min-width: 0;
 }
 
 .cal-entry-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 4px;
+  min-width: 0;
 }
 
 .cal-entry-emoji {
   font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1.2;
+  margin-top: 1px;
 }
 
 .cal-entry-title-text {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.98rem;
   color: var(--text-dark);
   font-family: var(--font-heading);
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
 }
 
 .cal-entry-desc-text {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  line-height: 1.4;
+  font-size: 0.88rem;
+  color: var(--text-dark);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border-left: 3px solid var(--primary);
+  margin-top: 6px;
+  line-height: 1.45;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .cal-entry-actions {
   display: flex;
   gap: 6px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .cal-entry-btn {
@@ -1595,11 +1635,11 @@ select:focus {
 /* Responsive adjustment for Calendar */
 @media (max-width: 768px) {
   .calendar-wrapper-card {
-    padding: 18px 12px;
+    padding: 14px 8px;
   }
 
   .cal-month-title {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     min-width: auto;
   }
 
@@ -1617,20 +1657,96 @@ select:focus {
     justify-content: center;
   }
 
+  .calendar-weekdays-grid {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .weekday-header {
+    font-size: 0.85rem;
+    padding: 4px 0;
+  }
+
+  .calendar-days-grid {
+    gap: 4px;
+    min-height: auto;
+  }
+
   .cal-day-cell {
-    min-height: 80px;
-    padding: 6px 4px;
+    min-height: 68px;
+    padding: 4px 3px;
+    border-radius: 8px;
   }
 
   .cal-day-number {
-    font-size: 0.9rem;
-    width: 22px;
-    height: 22px;
+    font-size: 0.82rem;
+    width: 20px;
+    height: 20px;
+  }
+
+  .cal-day-top {
+    margin-bottom: 2px;
+  }
+
+  .badge-tag {
+    font-size: 0.58rem;
+    padding: 0 3px;
   }
 
   .cal-entry-chip {
+    font-size: 0.65rem;
+    padding: 1px 3px;
+    gap: 2px;
+    border-radius: 3px;
+    border-left-width: 2px;
+  }
+
+  .cal-entry-chip-emoji {
     font-size: 0.68rem;
-    padding: 2px 4px;
+  }
+
+  .cal-photo-chip {
+    font-size: 0.58rem;
+    padding: 1px 3px;
+  }
+
+  .cal-more-entries {
+    font-size: 0.6rem;
+  }
+
+  /* Modal on mobile */
+  .cal-day-modal {
+    padding: 20px 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .cal-modal-heading {
+    font-size: 1.15rem;
+  }
+
+  .cal-modal-date-badge {
+    font-size: 0.85rem;
+    padding: 3px 12px;
+  }
+
+  .cal-entry-card {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .cal-entry-title-text {
+    font-size: 0.92rem;
+  }
+
+  .cal-entry-desc-text {
+    font-size: 0.84rem;
+    padding: 6px 10px;
+  }
+
+  .cal-entry-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.78rem;
   }
 
   .scrapbook-decor {
@@ -1781,6 +1897,14 @@ select:focus {
 }
 
 /* Lightbox Image Preview Modal */
+#lightbox-modal {
+  z-index: 2100;
+}
+
+#lightbox-modal .modal-box {
+  z-index: 2101;
+}
+
 .lightbox-card {
   max-width: 650px;
   padding: 20px;

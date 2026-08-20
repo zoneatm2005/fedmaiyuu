@@ -879,50 +879,68 @@ document.addEventListener('DOMContentLoaded', () => {
       // 1. Try Supabase JS Client (Separate Tables or Shared JSON)
       if (supabase) {
         try {
-          // Check love_memories table
-          const { data: memRows } = await supabase.from('love_memories').select('*');
-          if (Array.isArray(memRows) && memRows.length > 0) {
-            cloudPhotos = memRows.map(r => ({
-              id: r.id,
-              title: r.title,
-              date: r.date,
-              category: r.category,
-              caption: r.caption,
-              imageSrc: r.image_url || r.imageSrc
-            }));
+          // Check unified love_data table first for deleted IDs & unified data
+          const { data: rows } = await supabase.from('love_data').select('data').eq('id', 'shared_app_data');
+          if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
+            const d = rows[0].data;
+            if (Array.isArray(d.deletedPhotoIds)) {
+              d.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
+              try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+            }
+            if (Array.isArray(d.deletedCalendarIds)) {
+              d.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
+              try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+            }
+            if (Array.isArray(d.deletedBucketIds)) {
+              d.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
+              try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+            }
+
+            if (Array.isArray(d.photos)) cloudPhotos = d.photos;
+            if (Array.isArray(d.bucketList)) cloudBucket = d.bucketList;
+            if (Array.isArray(d.calendarNotes)) cloudCalendar = d.calendarNotes;
           }
 
-          // Check love_bucket table
-          const { data: bucketRows } = await supabase.from('love_bucket').select('*');
-          if (Array.isArray(bucketRows) && bucketRows.length > 0) {
-            cloudBucket = bucketRows.map(r => ({
-              id: r.id,
-              text: r.text,
-              completed: !!r.completed
-            }));
+          // Check love_memories table if not in unified
+          if (!cloudPhotos) {
+            const { data: memRows } = await supabase.from('love_memories').select('*');
+            if (Array.isArray(memRows)) {
+              cloudPhotos = memRows.map(r => ({
+                id: String(r.id),
+                title: r.title,
+                date: r.date,
+                category: r.category,
+                caption: r.caption,
+                imageSrc: r.image_url || r.imageSrc
+              }));
+            }
           }
 
-          // Check love_calendar table
-          const { data: calRows } = await supabase.from('love_calendar').select('*');
-          if (Array.isArray(calRows) && calRows.length > 0) {
-            cloudCalendar = calRows.map(r => ({
-              id: String(r.id),
-              date: r.date,
-              title: r.title,
-              content: r.content || '',
-              mood: r.mood || '💖',
-              category: r.category || 'date',
-              updatedAt: r.updated_at ? new Date(r.updated_at).getTime() : Date.now()
-            }));
+          // Check love_bucket table if not in unified
+          if (!cloudBucket) {
+            const { data: bucketRows } = await supabase.from('love_bucket').select('*');
+            if (Array.isArray(bucketRows)) {
+              cloudBucket = bucketRows.map(r => ({
+                id: String(r.id),
+                text: r.text,
+                completed: !!r.completed
+              }));
+            }
           }
 
-          // Check unified love_data table
-          if (!cloudPhotos || !cloudBucket || !cloudCalendar) {
-            const { data: rows } = await supabase.from('love_data').select('data').eq('id', 'shared_app_data');
-            if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
-              if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
-              if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
-              if (!cloudCalendar && Array.isArray(rows[0].data.calendarNotes)) cloudCalendar = rows[0].data.calendarNotes;
+          // Check love_calendar table if not in unified
+          if (!cloudCalendar) {
+            const { data: calRows } = await supabase.from('love_calendar').select('*');
+            if (Array.isArray(calRows)) {
+              cloudCalendar = calRows.map(r => ({
+                id: String(r.id),
+                date: r.date,
+                title: r.title,
+                content: r.content || '',
+                mood: r.mood || '💖',
+                category: r.category || 'date',
+                updatedAt: r.updated_at ? new Date(r.updated_at).getTime() : Date.now()
+              }));
             }
           }
         } catch (err) {
@@ -942,9 +960,23 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.ok) {
             const rows = await res.json();
             if (Array.isArray(rows) && rows.length > 0 && rows[0].data) {
-              if (!cloudPhotos && Array.isArray(rows[0].data.photos)) cloudPhotos = rows[0].data.photos;
-              if (!cloudBucket && Array.isArray(rows[0].data.bucketList)) cloudBucket = rows[0].data.bucketList;
-              if (!cloudCalendar && Array.isArray(rows[0].data.calendarNotes)) cloudCalendar = rows[0].data.calendarNotes;
+              const d = rows[0].data;
+              if (Array.isArray(d.deletedPhotoIds)) {
+                d.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+              }
+              if (Array.isArray(d.deletedCalendarIds)) {
+                d.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+              }
+              if (Array.isArray(d.deletedBucketIds)) {
+                d.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+              }
+
+              if (!cloudPhotos && Array.isArray(d.photos)) cloudPhotos = d.photos;
+              if (!cloudBucket && Array.isArray(d.bucketList)) cloudBucket = d.bucketList;
+              if (!cloudCalendar && Array.isArray(d.calendarNotes)) cloudCalendar = d.calendarNotes;
             }
           }
         } catch (err) { }
@@ -957,6 +989,19 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res.ok) {
             const data = await res.json();
             if (data && typeof data === 'object') {
+              if (Array.isArray(data.deletedPhotoIds)) {
+                data.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+              }
+              if (Array.isArray(data.deletedCalendarIds)) {
+                data.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+              }
+              if (Array.isArray(data.deletedBucketIds)) {
+                data.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
+                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+              }
+
               if (Array.isArray(data.photos)) cloudPhotos = data.photos;
               if (Array.isArray(data.bucketList)) cloudBucket = data.bucketList;
               if (Array.isArray(data.calendarNotes)) cloudCalendar = data.calendarNotes;
@@ -965,82 +1010,52 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) { }
       }
 
-      // --- SMART MERGE: FILTER OUT DELETED ITEMS & PRESERVE UNPERSISTED ADDITIONS ---
-      let updated = false;
-
+      // --- APPLY CLOUD DATA & EXCLUDE DELETED ITEMS ---
       if (Array.isArray(cloudPhotos)) {
         const cleanCloudPhotos = cloudPhotos.filter(p =>
+          p && p.id &&
           p.id !== 'photo-1' && p.id !== 'photo-2' && p.id !== 'photo-3' &&
-          !deletedPhotoIds.includes(p.id)
+          !deletedPhotoIds.includes(String(p.id))
         );
 
-        // Keep local active photos (ignoring deleted ones)
-        const activeLocalPhotos = photos.filter(p => !deletedPhotoIds.includes(p.id));
-
-        const mergedPhotosMap = new Map();
-        cleanCloudPhotos.forEach(p => mergedPhotosMap.set(p.id, p));
-        activeLocalPhotos.forEach(p => {
-          if (!mergedPhotosMap.has(p.id)) {
-            mergedPhotosMap.set(p.id, p);
-          }
-        });
-
-        const mergedPhotos = Array.from(mergedPhotosMap.values());
-        if (JSON.stringify(mergedPhotos) !== JSON.stringify(photos)) {
-          photos = mergedPhotos;
+        if (JSON.stringify(cleanCloudPhotos) !== JSON.stringify(photos)) {
+          photos = cleanCloudPhotos;
           try { localStorage.setItem('love_photos', JSON.stringify(photos)); } catch (e) { }
           renderGallery();
           renderCalendar();
-          updated = true;
+          if (activeSelectedDate && calendarModal && calendarModal.classList.contains('active')) {
+            renderModalPhotosForDate(activeSelectedDate);
+          }
         }
       }
 
       if (Array.isArray(cloudBucket)) {
         const cleanCloudBucket = cloudBucket.filter(b =>
+          b && b.id &&
           b.id !== 'b1' && b.id !== 'b2' && b.id !== 'b3' && b.id !== 'b4' &&
-          !deletedBucketIds.includes(b.id)
+          !deletedBucketIds.includes(String(b.id))
         );
 
-        const activeLocalBucket = bucketList.filter(b => !deletedBucketIds.includes(b.id));
-
-        const mergedBucketMap = new Map();
-        cleanCloudBucket.forEach(b => mergedBucketMap.set(b.id, b));
-        activeLocalBucket.forEach(b => {
-          if (!mergedBucketMap.has(b.id)) {
-            mergedBucketMap.set(b.id, b);
-          }
-        });
-
-        const mergedBucket = Array.from(mergedBucketMap.values());
-        if (JSON.stringify(mergedBucket) !== JSON.stringify(bucketList)) {
-          bucketList = mergedBucket;
+        if (JSON.stringify(cleanCloudBucket) !== JSON.stringify(bucketList)) {
+          bucketList = cleanCloudBucket;
           try { localStorage.setItem('love_bucket', JSON.stringify(bucketList)); } catch (e) { }
           renderBucketList();
-          updated = true;
         }
       }
 
       if (Array.isArray(cloudCalendar)) {
-        const cleanCloudCal = cloudCalendar.filter(c => !deletedCalendarIds.includes(c.id));
-        const activeLocalCal = calendarNotes.filter(c => !deletedCalendarIds.includes(c.id));
+        const cleanCloudCal = cloudCalendar.filter(c =>
+          c && c.id &&
+          !deletedCalendarIds.includes(String(c.id))
+        );
 
-        const mergedCalMap = new Map();
-        cleanCloudCal.forEach(c => mergedCalMap.set(c.id, c));
-        activeLocalCal.forEach(c => {
-          if (!mergedCalMap.has(c.id)) {
-            mergedCalMap.set(c.id, c);
-          }
-        });
-
-        const mergedCal = Array.from(mergedCalMap.values());
-        if (JSON.stringify(mergedCal) !== JSON.stringify(calendarNotes)) {
-          calendarNotes = mergedCal;
+        if (JSON.stringify(cleanCloudCal) !== JSON.stringify(calendarNotes)) {
+          calendarNotes = cleanCloudCal;
           try { localStorage.setItem('love_calendar', JSON.stringify(calendarNotes)); } catch (e) { }
           renderCalendar();
           if (activeSelectedDate && calendarModal && calendarModal.classList.contains('active')) {
             renderModalEntriesForDate(activeSelectedDate);
           }
-          updated = true;
         }
       }
 
@@ -1059,6 +1074,9 @@ document.addEventListener('DOMContentLoaded', () => {
         photos: photos,
         bucketList: bucketList,
         calendarNotes: calendarNotes,
+        deletedPhotoIds: deletedPhotoIds,
+        deletedCalendarIds: deletedCalendarIds,
+        deletedBucketIds: deletedBucketIds,
         lastUpdated: Date.now()
       };
 
@@ -1333,8 +1351,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const catClass = entry.category || 'date';
         entriesHtml += `
           <div class="cal-entry-chip ${catClass}" title="${escapeHtml(entry.title)}">
-            <span>${entry.mood || '💖'}</span>
-            <span>${escapeHtml(entry.title)}</span>
+            <span class="cal-entry-chip-emoji">${entry.mood || '💖'}</span>
+            <span class="cal-entry-chip-text">${escapeHtml(entry.title)}</span>
           </div>
         `;
       });
