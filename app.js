@@ -223,6 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGallery();
     renderCalendar();
     renderBucketList();
+    initCoupleGPS();
 
     // Start Online Realtime Cloud Data Sync (Supabase WebSockets & Fallback)
     syncFromCloud();
@@ -936,6 +937,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Array.isArray(d.photos)) cloudPhotos = d.photos;
             if (Array.isArray(d.bucketList)) cloudBucket = d.bucketList;
             if (Array.isArray(d.calendarNotes)) cloudCalendar = d.calendarNotes;
+
+            if (d.locations) {
+              let updatedLoc = false;
+              if (d.locations.fresh && (!coupleLocations.fresh || (d.locations.fresh.timestamp || 0) > (coupleLocations.fresh.timestamp || 0))) {
+                coupleLocations.fresh = d.locations.fresh;
+                updatedLoc = true;
+              }
+              if (d.locations.maiyuu && (!coupleLocations.maiyuu || (d.locations.maiyuu.timestamp || 0) > (coupleLocations.maiyuu.timestamp || 0))) {
+                coupleLocations.maiyuu = d.locations.maiyuu;
+                updatedLoc = true;
+              }
+              if (updatedLoc) {
+                try { localStorage.setItem('love_locations', JSON.stringify(coupleLocations)); } catch (e) { }
+                updateCoupleLocationUI();
+              }
+            }
           }
 
           // Check love_memories table if not in unified
@@ -1111,6 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         photos: photos,
         bucketList: bucketList,
         calendarNotes: calendarNotes,
+        locations: coupleLocations,
         deletedPhotoIds: deletedPhotoIds,
         deletedCalendarIds: deletedCalendarIds,
         deletedBucketIds: deletedBucketIds,
@@ -1856,6 +1874,14 @@ document.addEventListener('DOMContentLoaded', () => {
       tab.classList.add('active');
       const targetContent = document.getElementById(tab.dataset.tab);
       if (targetContent) targetContent.classList.add('active');
+
+      if (tab.dataset.tab === 'tab-gps') {
+        setTimeout(() => {
+          if (!coupleMap) initCoupleMap();
+          if (coupleMap) coupleMap.invalidateSize();
+          fitCoupleMapBounds();
+        }, 150);
+      }
     });
   });
 
@@ -1992,6 +2018,449 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillText(label, 300, 340);
 
     return cvs.toDataURL('image/png');
+  }
+
+  // ==========================================================================
+  // 6. COUPLE LIVE GPS & INTERACTIVE DISTANCE MAP
+  // ==========================================================================
+
+  let activeGpsRole = localStorage.getItem('love_gps_role') || 'fresh';
+  let coupleLocations = {
+    fresh: null,
+    maiyuu: null
+  };
+
+  try {
+    const savedLocs = localStorage.getItem('love_locations');
+    if (savedLocs) {
+      const parsed = JSON.parse(savedLocs);
+      if (parsed) coupleLocations = parsed;
+    }
+  } catch (e) { }
+
+  let coupleMap = null;
+  let markerFresh = null;
+  let markerMaiyuu = null;
+  let markerTogether = null;
+  let distanceLine = null;
+  let isLiveTracking = false;
+  let watchPositionId = null;
+  const geocodeCache = {};
+
+  // DOM Elements
+  const gpsNameFresh = document.getElementById('gps-name-fresh');
+  const gpsPlaceFresh = document.getElementById('gps-place-fresh');
+  const gpsTimeFresh = document.getElementById('gps-time-fresh');
+  const gpsNameMaiyuu = document.getElementById('gps-name-maiyuu');
+  const gpsPlaceMaiyuu = document.getElementById('gps-place-maiyuu');
+  const gpsTimeMaiyuu = document.getElementById('gps-time-maiyuu');
+  const gpsDistanceDisplay = document.getElementById('gps-distance-display');
+  const gpsDistanceStatus = document.getElementById('gps-distance-status');
+  const roleBtnFresh = document.getElementById('role-btn-fresh');
+  const roleBtnMaiyuu = document.getElementById('role-btn-maiyuu');
+  const gpsUpdateBtn = document.getElementById('gps-update-btn');
+  const gpsFitBtn = document.getElementById('gps-fit-btn');
+  const gpsLiveToggleBtn = document.getElementById('gps-live-toggle-btn');
+  const gpsLiveText = document.getElementById('gps-live-text');
+  const gpsSyncBadge = document.getElementById('gps-sync-badge');
+
+  function initCoupleGPS() {
+    // Setup Role Buttons
+    updateRoleButtonUI();
+
+    if (roleBtnFresh) {
+      roleBtnFresh.addEventListener('click', () => {
+        activeGpsRole = 'fresh';
+        localStorage.setItem('love_gps_role', 'fresh');
+        updateRoleButtonUI();
+        showToast('สลับเป็นโปรไฟล์: Fresh (เค้า) 👨', 'info');
+      });
+    }
+
+    if (roleBtnMaiyuu) {
+      roleBtnMaiyuu.addEventListener('click', () => {
+        activeGpsRole = 'maiyuu';
+        localStorage.setItem('love_gps_role', 'maiyuu');
+        updateRoleButtonUI();
+        showToast('สลับเป็นโปรไฟล์: Maiyuu (แฟน) 👩', 'info');
+      });
+    }
+
+    if (gpsUpdateBtn) {
+      gpsUpdateBtn.addEventListener('click', () => {
+        updateCurrentLocation(true);
+      });
+    }
+
+    if (gpsFitBtn) {
+      gpsFitBtn.addEventListener('click', () => {
+        fitCoupleMapBounds();
+      });
+    }
+
+    if (gpsLiveToggleBtn) {
+      gpsLiveToggleBtn.addEventListener('click', () => {
+        toggleLiveTracking();
+      });
+    }
+
+    // Init Map
+    initCoupleMap();
+    updateCoupleLocationUI();
+  }
+
+  function updateRoleButtonUI() {
+    if (roleBtnFresh) roleBtnFresh.classList.toggle('active', activeGpsRole === 'fresh');
+    if (roleBtnMaiyuu) roleBtnMaiyuu.classList.toggle('active', activeGpsRole === 'maiyuu');
+  }
+
+  function initCoupleMap() {
+    const mapContainer = document.getElementById('couple-map');
+    if (!mapContainer || coupleMap) return;
+
+    if (typeof L === 'undefined') {
+      console.warn('Leaflet library not loaded yet');
+      return;
+    }
+
+    try {
+      coupleMap = L.map('couple-map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([13.7563, 100.5018], 11);
+
+      // OpenStreetMap Voyager Tiles
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+      }).addTo(coupleMap);
+
+      // Render existing markers if available
+      updateCoupleLocationUI();
+    } catch (err) {
+      console.warn('Leaflet map init error:', err);
+    }
+  }
+
+  // Haversine Distance Formula (km)
+  function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // in kilometers
+  }
+
+  async function getThaiPlaceName(lat, lng) {
+    const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+    if (geocodeCache[key]) return geocodeCache[key];
+
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`, {
+        headers: { 'Accept-Language': 'th,en' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.address) {
+          const addr = data.address;
+          const place = addr.suburb || addr.neighbourhood || addr.district || addr.city_district || addr.city || addr.town || addr.province || 'กรุงเทพมหานคร';
+          const province = addr.province || addr.state || '';
+          const formatted = province && !place.includes(province) ? `${place}, ${province}` : place;
+          geocodeCache[key] = formatted;
+          return formatted;
+        }
+      }
+    } catch (e) {
+      console.warn('Geocoding error:', e);
+    }
+
+    return `พิกัด ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+
+  function formatRelativeTime(timestamp) {
+    if (!timestamp) return '-';
+    const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+    if (diffSec < 60) return 'เมื่อสักครู่';
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} นาทีที่แล้ว`;
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} ชั่วโมงที่แล้ว`;
+    return new Date(timestamp).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' });
+  }
+
+  async function updateCoupleLocationUI() {
+    const fresh = coupleLocations.fresh;
+    const maiyuu = coupleLocations.maiyuu;
+
+    // Fresh UI
+    if (gpsPlaceFresh) gpsPlaceFresh.textContent = fresh ? (fresh.address || `พิกัด ${fresh.lat.toFixed(3)}, ${fresh.lng.toFixed(3)}`) : 'ยังไม่มีพิกัดล่าสุด';
+    if (gpsTimeFresh) gpsTimeFresh.textContent = fresh ? `อัปเดต: ${formatRelativeTime(fresh.timestamp)}` : '-';
+
+    // Maiyuu UI
+    if (gpsPlaceMaiyuu) gpsPlaceMaiyuu.textContent = maiyuu ? (maiyuu.address || `พิกัด ${maiyuu.lat.toFixed(3)}, ${maiyuu.lng.toFixed(3)}`) : 'ยังไม่มีพิกัดล่าสุด';
+    if (gpsTimeMaiyuu) gpsTimeMaiyuu.textContent = maiyuu ? `อัปเดต: ${formatRelativeTime(maiyuu.timestamp)}` : '-';
+
+    // Distance Calculation
+    if (fresh && maiyuu && typeof fresh.lat === 'number' && typeof maiyuu.lat === 'number') {
+      const distKm = calculateHaversineDistance(fresh.lat, fresh.lng, maiyuu.lat, maiyuu.lng);
+      if (gpsDistanceDisplay) {
+        if (distKm < 0.08) {
+          gpsDistanceDisplay.textContent = '0 เมตร (อยู่ด้วยกัน)';
+          if (gpsDistanceStatus) gpsDistanceStatus.textContent = '🎉 ตอนนี้เราสองคนอยู่ด้วยกันแล้วนะ! 💕';
+        } else if (distKm < 1) {
+          const meters = Math.round(distKm * 1000);
+          gpsDistanceDisplay.textContent = `${meters} เมตร`;
+          if (gpsDistanceStatus) gpsDistanceStatus.textContent = 'ใกล้กันแค่นิดเดียว เดินไปหากันได้นะ 🥰';
+        } else {
+          gpsDistanceDisplay.textContent = `${distKm.toFixed(1)} กม.`;
+          if (gpsDistanceStatus) gpsDistanceStatus.textContent = 'ส่งความรักข้ามระยะทางไปหาเธอนะ 💖';
+        }
+      }
+    } else {
+      if (gpsDistanceDisplay) gpsDistanceDisplay.textContent = 'รอซิงก์พิกัดทั้งคู่';
+      if (gpsDistanceStatus) gpsDistanceStatus.textContent = 'กด "อัปเดตตำแหน่งของฉัน" เพื่อเริ่มแชร์ 📍';
+    }
+
+    // Update Leaflet Map Markers
+    if (coupleMap && typeof L !== 'undefined') {
+      const isTogether = fresh && maiyuu && typeof fresh.lat === 'number' && typeof maiyuu.lat === 'number' && calculateHaversineDistance(fresh.lat, fresh.lng, maiyuu.lat, maiyuu.lng) < 0.08;
+
+      if (isTogether) {
+        // --- TOGETHER MODE: SHOW SINGLE MERGED PAIR MARKER (NO OVERLAPPING!) ---
+        if (markerFresh) { coupleMap.removeLayer(markerFresh); markerFresh = null; }
+        if (markerMaiyuu) { coupleMap.removeLayer(markerMaiyuu); markerMaiyuu = null; }
+        if (distanceLine) { coupleMap.removeLayer(distanceLine); distanceLine = null; }
+
+        const togetherLatLng = [(fresh.lat + maiyuu.lat) / 2, (fresh.lng + maiyuu.lng) / 2];
+        const togetherIcon = L.divIcon({
+          className: 'together-avatar-container',
+          html: `
+            <div class="together-bubble-pair">
+              <div class="map-avatar-bubble mini">👨</div>
+              <div class="together-heart-badge">💖</div>
+              <div class="map-avatar-bubble mini partner">👩</div>
+            </div>
+            <div class="map-avatar-tag together">Fresh & Maiyuu อยู่ด้วยกัน 💕</div>
+          `,
+          iconSize: [160, 65],
+          iconAnchor: [80, 32]
+        });
+
+        if (!markerTogether) {
+          markerTogether = L.marker(togetherLatLng, { icon: togetherIcon }).addTo(coupleMap);
+        } else {
+          markerTogether.setLatLng(togetherLatLng);
+          markerTogether.setIcon(togetherIcon);
+        }
+        markerTogether.bindPopup(`<b>👩‍❤️‍👨 Fresh & Maiyuu</b><br>${fresh.address || maiyuu.address || ''}<br><small>🎉 ตอนนี้อยู่ด้วยกันแล้วนะคะ 💕</small>`);
+      } else {
+        // --- SEPARATE MODE: SHOW INDIVIDUAL FRESH & MAIYUU MARKERS ---
+        if (markerTogether) {
+          coupleMap.removeLayer(markerTogether);
+          markerTogether = null;
+        }
+
+        // 1. Fresh Marker
+        if (fresh && typeof fresh.lat === 'number') {
+          const freshLatLng = [fresh.lat, fresh.lng];
+          const freshIcon = L.divIcon({
+            className: 'custom-map-avatar-marker',
+            html: `
+              <div class="map-avatar-bubble">
+                <span class="map-pulse-halo"></span>
+                👨
+              </div>
+              <div class="map-avatar-tag">Fresh (เค้า)</div>
+            `,
+            iconSize: [60, 60],
+            iconAnchor: [30, 30]
+          });
+
+          if (!markerFresh) {
+            markerFresh = L.marker(freshLatLng, { icon: freshIcon }).addTo(coupleMap);
+          } else {
+            markerFresh.setLatLng(freshLatLng);
+            markerFresh.setIcon(freshIcon);
+          }
+          markerFresh.bindPopup(`<b>👨 Fresh (เค้า)</b><br>${fresh.address || ''}<br><small>อัปเดต: ${formatRelativeTime(fresh.timestamp)}</small>`);
+        }
+
+        // 2. Maiyuu Marker
+        if (maiyuu && typeof maiyuu.lat === 'number') {
+          const maiyuuLatLng = [maiyuu.lat, maiyuu.lng];
+          const maiyuuIcon = L.divIcon({
+            className: 'custom-map-avatar-marker',
+            html: `
+              <div class="map-avatar-bubble partner">
+                <span class="map-pulse-halo" style="background: rgba(233, 30, 99, 0.4);"></span>
+                👩
+              </div>
+              <div class="map-avatar-tag" style="background: #e91e63;">Maiyuu (แฟน)</div>
+            `,
+            iconSize: [60, 60],
+            iconAnchor: [30, 30]
+          });
+
+          if (!markerMaiyuu) {
+            markerMaiyuu = L.marker(maiyuuLatLng, { icon: maiyuuIcon }).addTo(coupleMap);
+          } else {
+            markerMaiyuu.setLatLng(maiyuuLatLng);
+            markerMaiyuu.setIcon(maiyuuIcon);
+          }
+          markerMaiyuu.bindPopup(`<b>👩 Maiyuu (แฟน)</b><br>${maiyuu.address || ''}<br><small>อัปเดต: ${formatRelativeTime(maiyuu.timestamp)}</small>`);
+        }
+
+        // 3. Connect Line
+        if (fresh && maiyuu && typeof fresh.lat === 'number' && typeof maiyuu.lat === 'number') {
+          const latLngs = [[fresh.lat, fresh.lng], [maiyuu.lat, maiyuu.lng]];
+          if (!distanceLine) {
+            distanceLine = L.polyline(latLngs, {
+              color: '#ff4b72',
+              weight: 3.5,
+              dashArray: '8, 8',
+              opacity: 0.85
+            }).addTo(coupleMap);
+          } else {
+            distanceLine.setLatLngs(latLngs);
+          }
+        } else if (distanceLine) {
+          coupleMap.removeLayer(distanceLine);
+          distanceLine = null;
+        }
+      }
+    }
+  }
+
+  function fitCoupleMapBounds() {
+    if (!coupleMap) return;
+    const fresh = coupleLocations.fresh;
+    const maiyuu = coupleLocations.maiyuu;
+
+    if (fresh && maiyuu && typeof fresh.lat === 'number' && typeof maiyuu.lat === 'number') {
+      const bounds = L.latLngBounds([[fresh.lat, fresh.lng], [maiyuu.lat, maiyuu.lng]]);
+      coupleMap.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 });
+    } else if (fresh && typeof fresh.lat === 'number') {
+      coupleMap.setView([fresh.lat, fresh.lng], 14);
+    } else if (maiyuu && typeof maiyuu.lat === 'number') {
+      coupleMap.setView([maiyuu.lat, maiyuu.lng], 14);
+    }
+  }
+
+  function updateCurrentLocation(showToastMsg = true) {
+    if (!navigator.geolocation) {
+      showToast('เบราว์เซอร์นี้ไม่รองรับการใช้งาน GPS 🥺', 'error');
+      return;
+    }
+
+    if (showToastMsg) {
+      showToast('กำลังตรวจจับพิกัด GPS... 🛰️', 'info', 2500);
+      if (gpsUpdateBtn) gpsUpdateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังอัปเดต...';
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = pos.coords.accuracy;
+
+        const address = await getThaiPlaceName(lat, lng);
+
+        coupleLocations[activeGpsRole] = {
+          lat: lat,
+          lng: lng,
+          accuracy: accuracy,
+          address: address,
+          timestamp: Date.now()
+        };
+
+        try {
+          localStorage.setItem('love_locations', JSON.stringify(coupleLocations));
+        } catch (e) { }
+
+        updateCoupleLocationUI();
+        fitCoupleMapBounds();
+        spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
+
+        if (showToastMsg) {
+          showToast(`อัปเดตตำแหน่งของ ${activeGpsRole === 'fresh' ? 'Fresh (เค้า)' : 'Maiyuu (แฟน)'} สำเร็จแล้ว 📍`, 'success');
+        }
+
+        if (gpsUpdateBtn) gpsUpdateBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> อัปเดตตำแหน่งของฉัน';
+
+        // Sync to Supabase Cloud
+        await pushToCloud();
+      },
+      (err) => {
+        console.warn('Geolocation error:', err);
+        let msg = 'ไม่สามารถดึงตำแหน่งได้ กรุณาเปิด Location บนมือถือ/เบราว์เซอร์นะคะ 🥺';
+        if (err.code === 1) msg = 'กรุณากด "อนุญาต (Allow)" ให้เข้าถึงพิกัด GPS นะคะ 📍';
+        showToast(msg, 'error', 4000);
+        if (gpsUpdateBtn) gpsUpdateBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> อัปเดตตำแหน่งของฉัน';
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 10000
+      }
+    );
+  }
+
+  function toggleLiveTracking() {
+    if (isLiveTracking) {
+      // Stop tracking
+      if (watchPositionId !== null) {
+        navigator.geolocation.clearWatch(watchPositionId);
+        watchPositionId = null;
+      }
+      isLiveTracking = false;
+      if (gpsLiveText) gpsLiveText.textContent = 'ติดตามสด: ปิด';
+      if (gpsLiveToggleBtn) gpsLiveToggleBtn.classList.remove('btn-primary');
+      showToast('ปิดโหมดติดตามสดแล้ว 🛰️', 'info');
+    } else {
+      if (!navigator.geolocation) {
+        showToast('เบราว์เซอร์ไม่รองรับ GPS', 'error');
+        return;
+      }
+
+      isLiveTracking = true;
+      if (gpsLiveText) gpsLiveText.textContent = 'ติดตามสด: เปิด 🟢';
+      if (gpsLiveToggleBtn) gpsLiveToggleBtn.classList.add('btn-primary');
+      showToast('เปิดโหมดติดตามสดแล้ว ระบบจะอัปเดตพิกัดอัตโนมัติ 💕', 'success');
+
+      updateCurrentLocation(false);
+
+      watchPositionId = navigator.geolocation.watchPosition(
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const accuracy = pos.coords.accuracy;
+          const address = await getThaiPlaceName(lat, lng);
+
+          coupleLocations[activeGpsRole] = {
+            lat: lat,
+            lng: lng,
+            accuracy: accuracy,
+            address: address,
+            timestamp: Date.now()
+          };
+
+          try { localStorage.setItem('love_locations', JSON.stringify(coupleLocations)); } catch (e) { }
+
+          updateCoupleLocationUI();
+          await pushToCloud();
+        },
+        (err) => {
+          console.warn('WatchPosition error:', err);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 30000,
+          timeout: 15000
+        }
+      );
+    }
   }
 
   // RUN APP!
