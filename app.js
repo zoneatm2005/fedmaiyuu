@@ -2073,7 +2073,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeGpsRole = 'fresh';
         localStorage.setItem('love_gps_role', 'fresh');
         updateRoleButtonUI();
-        showToast('สลับเป็นโปรไฟล์: Fresh (เค้า) 👨', 'info');
+        showToast('สลับเป็นโปรไฟล์: เบส 👨', 'info');
       });
     }
 
@@ -2082,7 +2082,7 @@ document.addEventListener('DOMContentLoaded', () => {
         activeGpsRole = 'maiyuu';
         localStorage.setItem('love_gps_role', 'maiyuu');
         updateRoleButtonUI();
-        showToast('สลับเป็นโปรไฟล์: Maiyuu (แฟน) 👩', 'info');
+        showToast('สลับเป็นโปรไฟล์: เฟรช 👩', 'info');
       });
     }
 
@@ -2272,7 +2272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="map-pulse-halo"></span>
                 👨
               </div>
-              <div class="map-avatar-tag">Fresh (เค้า)</div>
+              <div class="map-avatar-tag">เบส</div>
             `,
             iconSize: [60, 60],
             iconAnchor: [30, 30]
@@ -2284,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             markerFresh.setLatLng(freshLatLng);
             markerFresh.setIcon(freshIcon);
           }
-          markerFresh.bindPopup(`<b>👨 Fresh (เค้า)</b><br>${fresh.address || ''}<br><small>อัปเดต: ${formatRelativeTime(fresh.timestamp)}</small>`);
+          markerFresh.bindPopup(`<b>👨 เบส</b><br>${fresh.address || ''}<br><small>อัปเดต: ${formatRelativeTime(fresh.timestamp)}</small>`);
         }
 
         // 2. Maiyuu Marker
@@ -2297,7 +2297,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="map-pulse-halo" style="background: rgba(233, 30, 99, 0.4);"></span>
                 👩
               </div>
-              <div class="map-avatar-tag" style="background: #e91e63;">Maiyuu (แฟน)</div>
+              <div class="map-avatar-tag" style="background: #e91e63;">เฟรช</div>
             `,
             iconSize: [60, 60],
             iconAnchor: [30, 30]
@@ -2309,7 +2309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             markerMaiyuu.setLatLng(maiyuuLatLng);
             markerMaiyuu.setIcon(maiyuuIcon);
           }
-          markerMaiyuu.bindPopup(`<b>👩 Maiyuu (แฟน)</b><br>${maiyuu.address || ''}<br><small>อัปเดต: ${formatRelativeTime(maiyuu.timestamp)}</small>`);
+          markerMaiyuu.bindPopup(`<b>👩 เฟรช</b><br>${maiyuu.address || ''}<br><small>อัปเดต: ${formatRelativeTime(maiyuu.timestamp)}</small>`);
         }
 
         // 3. Connect Line
@@ -2384,7 +2384,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
 
         if (showToastMsg) {
-          showToast(`อัปเดตตำแหน่งของ ${activeGpsRole === 'fresh' ? 'Fresh (เค้า)' : 'Maiyuu (แฟน)'} สำเร็จแล้ว 📍`, 'success');
+          showToast(`อัปเดตตำแหน่งของ ${activeGpsRole === 'fresh' ? 'เบส' : 'เฟรช'} สำเร็จแล้ว 📍`, 'success');
         }
 
         if (gpsUpdateBtn) gpsUpdateBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> อัปเดตตำแหน่งของฉัน';
