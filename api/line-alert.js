@@ -26,7 +26,8 @@ export default async function handler(req, res) {
     const { enteredPin, attemptCount, timestamp, userAgent } = body;
 
     const LINE_ACCESS_TOKEN = 'tWGQCCCWRIwj0Smn3lQ+rDiTsUWTZlDQIUzOf/dyTy81ZNs64VUp0fMopL028phhbariWKa+AUbhQOIJTA7mwvT3S/nxY/tVsHdtiqwCsg60myXMUF71bC3DR0FAiuEeeEKof3COs2lwJf/OVeYyOQdB04t89/1O/w1cDnyilFU=';
-    const LINE_USER_ID = 'Ud610439409d7988821ff8ce6dae26aeb';
+    // Send directly to the Couple's LINE Group
+    const LINE_TARGET_ID = 'Cd34a6d262de3438f5a62213ec9a0694c';
 
     // Parse Device Info
     let device = '🌐 อุปกรณ์ทั่วไป';
@@ -60,7 +61,7 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${LINE_ACCESS_TOKEN}`
       },
       body: JSON.stringify({
-        to: LINE_USER_ID,
+        to: LINE_TARGET_ID,
         messages: [
           {
             type: 'text',
