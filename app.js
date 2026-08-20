@@ -270,9 +270,43 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePinDots();
   }
 
+  // --- LINE SECURITY NOTIFICATION HELPER ---
+  let wrongPinAttempts = 0;
+  async function sendWrongPinLineAlert(failedPin) {
+    wrongPinAttempts++;
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const payload = {
+        enteredPin: failedPin,
+        attemptCount: wrongPinAttempts,
+        timestamp: timeString,
+        userAgent: navigator.userAgent
+      };
+
+      await fetch('/api/line-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('LINE Security Alert send error:', e);
+    }
+  }
+
   function verifyPin() {
     if (VALID_PINS.includes(enteredPin)) {
       // SUCCESS: Unlock!
+      wrongPinAttempts = 0;
       pinDots.forEach(dot => dot.classList.add('success'));
       config.unlocked = true;
       sessionStorage.setItem('love_unlocked', 'true');
@@ -286,7 +320,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('ปลดล็อกสำเร็จแล้ว ยินดีต้อนรับนะคะ 💕', 'success');
       }, 350);
     } else {
-      // ERROR: Shake & Feedback
+      // ERROR: Shake & Feedback + Send LINE Alert Notification
+      const failedPinAttempt = enteredPin;
+      sendWrongPinLineAlert(failedPinAttempt);
+
       pinDots.forEach(dot => dot.classList.add('error'));
       const lockCard = document.querySelector('.lock-card');
       if (lockCard) {
