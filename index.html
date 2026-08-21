@@ -9,9 +9,6 @@
   <link rel="stylesheet" href="styles.css">
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Leaflet Map CSS & JS for Couple Live GPS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Supabase JS Client for Instant Realtime Cloud Sync -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -96,40 +93,12 @@
       </div>
     </header>
 
-    <!-- Hero Card: Love Days Live Counter -->
-    <section class="hero-card">
-      <h2 class="couple-names" id="display-couple-names">You & Me 💕</h2>
-      <div class="anniversary-badge" id="display-anniversary-date">
-        <i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: 02/08/2026
-      </div>
-
-      <div class="counter-grid">
-        <div class="counter-box">
-          <div class="counter-val" id="cnt-days">0</div>
-          <div class="counter-label">วัน (Days)</div>
-        </div>
-        <div class="counter-box">
-          <div class="counter-val" id="cnt-hours">00</div>
-          <div class="counter-label">ชั่วโมง</div>
-        </div>
-        <div class="counter-box">
-          <div class="counter-val" id="cnt-minutes">00</div>
-          <div class="counter-label">นาที</div>
-        </div>
-        <div class="counter-box">
-          <div class="counter-val" id="cnt-seconds">00</div>
-          <div class="counter-label">วินาที</div>
-        </div>
-      </div>
-
-      <div class="quote-box" id="daily-quote">
-        "มีเธอคือช่วงเวลาที่ดีที่สุดในชีวิต"
-      </div>
-    </section>
-
     <!-- Navigation Tabs -->
     <nav class="section-nav">
-      <button class="nav-tab active" data-tab="tab-gallery">
+      <button class="nav-tab active" data-tab="tab-youme">
+        <i class="fa-solid fa-heart"></i> You & Me 💕
+      </button>
+      <button class="nav-tab" data-tab="tab-gallery">
         <i class="fa-solid fa-images"></i> อัลบั้มรูปความทรงจำ
       </button>
       <button class="nav-tab" data-tab="tab-calendar">
@@ -138,15 +107,84 @@
       <button class="nav-tab" data-tab="tab-bucket">
         <i class="fa-solid fa-heart-circle-check"></i> ลิสต์คู่
       </button>
-      <button class="nav-tab" data-tab="tab-gps">
-        <i class="fa-solid fa-location-dot"></i> พิกัดรักของเรา 📍
-      </button>
     </nav>
+
+    <!-- ==========================================================================
+         TAB 0: YOU & ME (COUPLE STORY & LIVE COUNTER)
+         ========================================================================== -->
+    <section id="tab-youme" class="tab-content active">
+      <!-- Hero Card: Love Days Live Counter -->
+      <div class="hero-card">
+        <h2 class="couple-names" id="display-couple-names">You & Me 💕</h2>
+        <div class="anniversary-badge" id="display-anniversary-date">
+          <i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: 02/08/2026
+        </div>
+
+        <div class="counter-grid">
+          <div class="counter-box">
+            <div class="counter-val" id="cnt-days">0</div>
+            <div class="counter-label">วัน (Days)</div>
+          </div>
+          <div class="counter-box">
+            <div class="counter-val" id="cnt-hours">00</div>
+            <div class="counter-label">ชั่วโมง</div>
+          </div>
+          <div class="counter-box">
+            <div class="counter-val" id="cnt-minutes">00</div>
+            <div class="counter-label">นาที</div>
+          </div>
+          <div class="counter-box">
+            <div class="counter-val" id="cnt-seconds">00</div>
+            <div class="counter-label">วินาที</div>
+          </div>
+        </div>
+
+        <div class="quote-box" id="daily-quote">
+          "มีเธอคือช่วงเวลาที่ดีที่สุดในชีวิต"
+        </div>
+
+        <div class="youme-actions" style="margin-top: 24px;">
+          <button type="button" id="send-love-heart-btn" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 75, 114, 0.35);">
+            <i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 1s;"></i> ส่งความรักให้เธอ 💖
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Summary Cards for You & Me Page -->
+      <div class="youme-stats-grid">
+        <div class="youme-stat-card" data-goto="tab-gallery">
+          <div class="stat-icon">📸</div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-photos-count">0</div>
+            <div class="stat-label">รูปภาพความทรงจำ</div>
+          </div>
+          <i class="fa-solid fa-chevron-right stat-arrow"></i>
+        </div>
+
+        <div class="youme-stat-card" data-goto="tab-calendar">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-calendar-count">0</div>
+            <div class="stat-label">บันทึกเรื่องราว</div>
+          </div>
+          <i class="fa-solid fa-chevron-right stat-arrow"></i>
+        </div>
+
+        <div class="youme-stat-card" data-goto="tab-bucket">
+          <div class="stat-icon">✨</div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-bucket-count">0</div>
+            <div class="stat-label">ลิสต์คู่ที่อยากทำ</div>
+          </div>
+          <i class="fa-solid fa-chevron-right stat-arrow"></i>
+        </div>
+      </div>
+    </section>
 
     <!-- ==========================================================================
          TAB 1: PHOTO GALLERY & ALBUM
          ========================================================================== -->
-    <section id="tab-gallery" class="tab-content active">
+    <section id="tab-gallery" class="tab-content">
       <div class="gallery-header">
         <div class="category-filter">
           <button class="filter-chip active" data-filter="all">ทั้งหมด 📸</button>
@@ -280,91 +318,6 @@
 
         <div class="bucket-list" id="bucket-list-container">
           <!-- Rendered dynamically -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ==========================================================================
-         TAB 4: COUPLE LIVE GPS & DISTANCE MAP
-         ========================================================================== -->
-    <section id="tab-gps" class="tab-content">
-      <!-- Couple Live Distance Card -->
-      <div class="gps-hero-card">
-        <div class="gps-status-header">
-          <div class="gps-user-side" id="gps-user-fresh">
-            <div class="gps-avatar-wrap">
-              <span class="gps-avatar-emoji">👨</span>
-              <span class="gps-pulse-ring" id="pulse-fresh"></span>
-            </div>
-            <div class="gps-user-info">
-              <span class="gps-user-name" id="gps-name-fresh">เบส</span>
-              <span class="gps-user-place" id="gps-place-fresh">กำลังโหลดพิกัด...</span>
-              <span class="gps-user-time" id="gps-time-fresh">-</span>
-            </div>
-          </div>
-
-          <div class="gps-distance-center">
-            <div class="gps-heart-icon-box">
-              <i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 1.2s; color: #ff4b72;"></i>
-            </div>
-            <div class="gps-distance-text" id="gps-distance-display">คำนวณระยะทาง...</div>
-            <div class="gps-distance-sub" id="gps-distance-status">กำลังตรวจเช็คตำแหน่ง 💕</div>
-          </div>
-
-          <div class="gps-user-side" id="gps-user-maiyuu">
-            <div class="gps-avatar-wrap">
-              <span class="gps-avatar-emoji">👩</span>
-              <span class="gps-pulse-ring partner" id="pulse-maiyuu"></span>
-            </div>
-            <div class="gps-user-info">
-              <span class="gps-user-name" id="gps-name-maiyuu">เฟรช</span>
-              <span class="gps-user-place" id="gps-place-maiyuu">กำลังโหลดพิกัด...</span>
-              <span class="gps-user-time" id="gps-time-maiyuu">-</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Identity Switcher: Choose Current Device Role -->
-        <div class="gps-identity-bar">
-          <span class="gps-identity-label"><i class="fa-solid fa-mobile-screen-button"></i> เครื่องนี้คือใคร:</span>
-          <div class="gps-role-toggle">
-            <button type="button" class="gps-role-btn active" id="role-btn-fresh" data-role="fresh">
-              👨 เบส
-            </button>
-            <button type="button" class="gps-role-btn" id="role-btn-maiyuu" data-role="maiyuu">
-              👩 เฟรช
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Interactive Map Card -->
-      <div class="gps-map-card">
-        <div class="gps-map-toolbar">
-          <div class="gps-map-title">
-            <i class="fa-solid fa-map-location-dot" style="color: var(--primary);"></i> แผนที่พิกัดสดของเราสองคน
-          </div>
-          <div class="gps-map-actions">
-            <button type="button" id="gps-update-btn" class="btn btn-primary btn-sm">
-              <i class="fa-solid fa-location-crosshairs"></i> อัปเดตตำแหน่งของฉัน
-            </button>
-            <button type="button" id="gps-fit-btn" class="btn btn-secondary btn-sm" title="จัดมุมมองให้เห็นทั้งคู่">
-              <i class="fa-solid fa-arrows-to-eye"></i> โฟกัสทั้งคู่
-            </button>
-            <button type="button" id="gps-live-toggle-btn" class="btn btn-secondary btn-sm" title="เปิดโหมดติดตามสด">
-              <i class="fa-solid fa-satellite-dish"></i> <span id="gps-live-text">ติดตามสด: ปิด</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Leaflet Map Container -->
-        <div id="couple-map"></div>
-
-        <!-- Realtime Location Summary Footer -->
-        <div class="gps-summary-footer">
-          <div class="gps-chip"><i class="fa-solid fa-satellite"></i> ซิงก์ตำแหน่งอัตโนมัติผ่าน Supabase เรียลไทม์</div>
-          <div class="gps-chip" id="gps-sync-badge"><i class="fa-solid fa-circle-check" style="color: #4caf50;"></i>
-            พร้อมใช้งาน</div>
         </div>
       </div>
     </section>
