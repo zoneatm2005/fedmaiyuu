@@ -1,5 +1,5 @@
 // ==========================================================================
-// Vercel Serverless Function: LINE Notification Handler (PIN Alert & Photo Upload)
+// Vercel Serverless Function: LINE Notification Handler (Flex Message)
 // ==========================================================================
 
 export default async function handler(req, res) {
@@ -60,48 +60,371 @@ export default async function handler(req, res) {
         formattedDate = `${d}/${m}/${y}`;
       }
 
-      // If valid HTTPS cloud image URL is available, send preview image directly to LINE
+      // Create LINE Flex Message Card (Matching Premium Real-Estate / Card Template)
       const isHttpsImage = typeof imageUrl === 'string' && imageUrl.startsWith('https://');
+
+      const flexBubble = {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#0F2F57',
+          paddingTop: '16px',
+          paddingBottom: '16px',
+          paddingStart: '20px',
+          paddingEnd: '20px',
+          contents: [
+            {
+              type: 'text',
+              text: 'FRESHMAIYUU',
+              color: '#8EA8C3',
+              size: 'xs',
+              weight: 'bold',
+              letterSpacing: '1px'
+            },
+            {
+              type: 'text',
+              text: 'บันทึกความทรงจำใหม่ 💕',
+              color: '#FFFFFF',
+              size: 'lg',
+              weight: 'bold',
+              margin: 'xs'
+            }
+          ]
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'md',
+          paddingTop: '18px',
+          paddingBottom: '18px',
+          paddingStart: '20px',
+          paddingEnd: '20px',
+          contents: [
+            {
+              type: 'text',
+              text: title || 'ความทรงจำของเรา 💕',
+              weight: 'bold',
+              size: 'md',
+              color: '#0F172A',
+              wrap: true
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              spacing: 'sm',
+              contents: [
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '🏷️ หมวดหมู่',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: catLabel,
+                      color: '#1E293B',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '📅 วันที่',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: formattedDate,
+                      color: '#1E293B',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '⏰ เวลา',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: currentTime,
+                      color: '#1E293B',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '📱 อุปกรณ์',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: device,
+                      color: '#334155',
+                      size: 'sm',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              margin: 'md',
+              backgroundColor: '#F8FAFC',
+              cornerRadius: 'md',
+              paddingAll: '12px',
+              contents: [
+                {
+                  type: 'text',
+                  text: caption ? `💬 ${caption}` : '💬 บันทึกความทรงจำและช่วงเวลาสุดพิเศษของเราสองคน 💕',
+                  size: 'xs',
+                  color: '#475569',
+                  wrap: true
+                },
+                {
+                  type: 'text',
+                  text: '✨ เข้าไปดูรูปเพิ่มเติมได้ที่เว็บความทรงจำของเรานะ',
+                  size: 'xxs',
+                  color: '#94A3B8',
+                  margin: 'xs',
+                  wrap: true
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      // If valid HTTPS cloud image URL exists, set it as hero image
       if (isHttpsImage) {
-        messages.push({
+        flexBubble.hero = {
           type: 'image',
-          originalContentUrl: imageUrl,
-          previewImageUrl: imageUrl
-        });
+          url: imageUrl,
+          size: 'full',
+          aspectRatio: '20:13',
+          aspectMode: 'cover'
+        };
       }
 
-      const photoAlertMessage = 
-`📸 [แจ้งเตือนความทรงจำใหม่] มีคนอัปรูปใหม่ในเว็บแล้ว! 💕
-━━━━━━━━━━━━━━━━━━━━
-🌸 หัวข้อ: ${title || 'ความทรงจำของเรา'}
-🏷️ หมวดหมู่: ${catLabel}
-📅 วันที่ของรูป: ${formattedDate}
-💬 ข้อความ: ${caption || 'ไม่มีข้อความ'}
-⏰ เวลาที่อัปโหลด: ${currentTime}
-📱 ผ่านอุปกรณ์: ${device}
-━━━━━━━━━━━━━━━━━━━━
-✨ เข้าไปชมรูปหวานๆ ในเว็บของเราได้เลยนะคะ 💖`;
-
       messages.push({
-        type: 'text',
-        text: photoAlertMessage
+        type: 'flex',
+        altText: `📸 มีรูปภาพความทรงจำใหม่: ${title || 'ความทรงจำของเรา'} 💕`,
+        contents: flexBubble
       });
     } else {
-      // Default: Wrong PIN Security Alert
-      const alertMessage = 
-`🚨 [แจ้งเตือนความปลอดภัย] มีคนพยายามปลดล็อกเว็บ!
-━━━━━━━━━━━━━━━━━━━━
-❌ สถานะ: ใส่รหัส PIN ไม่ถูกต้อง
-🔢 รหัสที่ลองกด: ${enteredPin || 'ไม่ระบุ'}
-⚠️ ใส่ผิดครั้งที่: ${attemptCount || 1}
-⏰ เวลา: ${currentTime}
-📱 อุปกรณ์: ${device}
-━━━━━━━━━━━━━━━━━━━━
-💬 มีคนแอบกด หรือแฟนจำรหัสวันสำคัญไม่ได้นะ? 🥺`;
+      // Default: Wrong PIN Security Alert (Formatted as Flex Message)
+      const securityBubble = {
+        type: 'bubble',
+        size: 'mega',
+        header: {
+          type: 'box',
+          layout: 'vertical',
+          backgroundColor: '#991B1B',
+          paddingTop: '16px',
+          paddingBottom: '16px',
+          paddingStart: '20px',
+          paddingEnd: '20px',
+          contents: [
+            {
+              type: 'text',
+              text: 'SECURITY ALERT',
+              color: '#FCA5A5',
+              size: 'xs',
+              weight: 'bold',
+              letterSpacing: '1px'
+            },
+            {
+              type: 'text',
+              text: 'แจ้งเตือนความปลอดภัย 🚨',
+              color: '#FFFFFF',
+              size: 'lg',
+              weight: 'bold',
+              margin: 'xs'
+            }
+          ]
+        },
+        body: {
+          type: 'box',
+          layout: 'vertical',
+          spacing: 'md',
+          paddingTop: '18px',
+          paddingBottom: '18px',
+          paddingStart: '20px',
+          paddingEnd: '20px',
+          contents: [
+            {
+              type: 'text',
+              text: '❌ มีคนใส่รหัส PIN ไม่ถูกต้อง',
+              weight: 'bold',
+              size: 'md',
+              color: '#991B1B',
+              wrap: true
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              spacing: 'sm',
+              contents: [
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '🔢 รหัสที่กด',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: enteredPin || 'ไม่ระบุ',
+                      color: '#1E293B',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '⚠️ ครั้งที่',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: `${attemptCount || 1}`,
+                      color: '#DC2626',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '⏰ เวลา',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: currentTime,
+                      color: '#1E293B',
+                      size: 'sm',
+                      weight: 'bold',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                },
+                {
+                  type: 'box',
+                  layout: 'baseline',
+                  spacing: 'sm',
+                  contents: [
+                    {
+                      type: 'text',
+                      text: '📱 อุปกรณ์',
+                      color: '#64748B',
+                      size: 'sm',
+                      flex: 3
+                    },
+                    {
+                      type: 'text',
+                      text: device,
+                      color: '#334155',
+                      size: 'sm',
+                      wrap: true,
+                      flex: 7
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              type: 'box',
+              layout: 'vertical',
+              margin: 'md',
+              backgroundColor: '#FEF2F2',
+              cornerRadius: 'md',
+              paddingAll: '12px',
+              contents: [
+                {
+                  type: 'text',
+                  text: '💬 มีคนแอบกด หรือแฟนจำรหัสวันสำคัญไม่ได้นะ? 🥺',
+                  size: 'xs',
+                  color: '#991B1B',
+                  wrap: true
+                }
+              ]
+            }
+          ]
+        }
+      };
 
       messages.push({
-        type: 'text',
-        text: alertMessage
+        type: 'flex',
+        altText: '🚨 [แจ้งเตือนความปลอดภัย] มีคนพยายามปลดล็อกเว็บ!',
+        contents: securityBubble
       });
     }
 

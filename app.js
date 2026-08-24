@@ -962,15 +962,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const d = rows[0].data;
             if (Array.isArray(d.deletedPhotoIds)) {
               d.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
-              try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+              try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch (e) { }
             }
             if (Array.isArray(d.deletedCalendarIds)) {
               d.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
-              try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+              try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch (e) { }
             }
             if (Array.isArray(d.deletedBucketIds)) {
               d.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
-              try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+              try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
             }
 
             if (Array.isArray(d.photos)) cloudPhotos = d.photos;
@@ -1040,15 +1040,15 @@ document.addEventListener('DOMContentLoaded', () => {
               const d = rows[0].data;
               if (Array.isArray(d.deletedPhotoIds)) {
                 d.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch (e) { }
               }
               if (Array.isArray(d.deletedCalendarIds)) {
                 d.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch (e) { }
               }
               if (Array.isArray(d.deletedBucketIds)) {
                 d.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
               }
 
               if (!cloudPhotos && Array.isArray(d.photos)) cloudPhotos = d.photos;
@@ -1068,15 +1068,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data && typeof data === 'object') {
               if (Array.isArray(data.deletedPhotoIds)) {
                 data.deletedPhotoIds.forEach(id => { if (!deletedPhotoIds.includes(String(id))) deletedPhotoIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_photos', JSON.stringify(deletedPhotoIds)); } catch (e) { }
               }
               if (Array.isArray(data.deletedCalendarIds)) {
                 data.deletedCalendarIds.forEach(id => { if (!deletedCalendarIds.includes(String(id))) deletedCalendarIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_calendar', JSON.stringify(deletedCalendarIds)); } catch (e) { }
               }
               if (Array.isArray(data.deletedBucketIds)) {
                 data.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
-                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch(e){}
+                try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
               }
 
               if (Array.isArray(data.photos)) cloudPhotos = data.photos;
