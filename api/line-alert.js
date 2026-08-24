@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         header: {
           type: 'box',
           layout: 'vertical',
-          backgroundColor: '#0F2F57',
+          backgroundColor: '#FF4770',
           paddingTop: '16px',
           paddingBottom: '16px',
           paddingStart: '20px',
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
             {
               type: 'text',
               text: 'FRESHMAIYUU',
-              color: '#8EA8C3',
+              color: '#FFE4E9',
               size: 'xs',
               weight: 'bold'
             },
