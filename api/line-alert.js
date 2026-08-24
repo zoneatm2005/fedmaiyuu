@@ -1,5 +1,5 @@
 // ==========================================================================
-// Vercel Serverless Function: LINE Security Alert (Wrong PIN Notification)
+// Vercel Serverless Function: LINE Notification Handler (PIN Alert & Photo Upload)
 // ==========================================================================
 
 export default async function handler(req, res) {
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { enteredPin, attemptCount, timestamp, userAgent } = body;
+    const { type, enteredPin, attemptCount, timestamp, userAgent, title, date, category, caption, imageUrl } = body;
 
     const LINE_ACCESS_TOKEN = 'tWGQCCCWRIwj0Smn3lQ+rDiTsUWTZlDQIUzOf/dyTy81ZNs64VUp0fMopL028phhbariWKa+AUbhQOIJTA7mwvT3S/nxY/tVsHdtiqwCsg60myXMUF71bC3DR0FAiuEeeEKof3COs2lwJf/OVeYyOQdB04t89/1O/w1cDnyilFU=';
     // Send directly to the Couple's LINE Group
@@ -41,8 +41,54 @@ export default async function handler(req, res) {
 
     const currentTime = timestamp || new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
-    // Format Alert Message
-    const alertMessage = 
+    let messages = [];
+
+    // Check if this is a Photo Upload event
+    if (type === 'photo_upload' || (!enteredPin && (title || imageUrl))) {
+      // Map category to readable Thai label
+      const categoryMap = {
+        'Cute': 'ช่วงเวลาน่ารัก 🐱',
+        'First Date': 'เดตแรก ☕',
+        'Trips': 'ทริปเที่ยว ✈️',
+        'Anniversary': 'วันครบรอบ 🎉'
+      };
+      const catLabel = categoryMap[category] || category || 'ความทรงจำ 💕';
+
+      let formattedDate = date || 'ไม่ระบุวันที่';
+      if (date && date.includes('-')) {
+        const [y, m, d] = date.split('-');
+        formattedDate = `${d}/${m}/${y}`;
+      }
+
+      // If valid HTTPS cloud image URL is available, send preview image directly to LINE
+      const isHttpsImage = typeof imageUrl === 'string' && imageUrl.startsWith('https://');
+      if (isHttpsImage) {
+        messages.push({
+          type: 'image',
+          originalContentUrl: imageUrl,
+          previewImageUrl: imageUrl
+        });
+      }
+
+      const photoAlertMessage = 
+`📸 [แจ้งเตือนความทรงจำใหม่] มีคนอัปรูปใหม่ในเว็บแล้ว! 💕
+━━━━━━━━━━━━━━━━━━━━
+🌸 หัวข้อ: ${title || 'ความทรงจำของเรา'}
+🏷️ หมวดหมู่: ${catLabel}
+📅 วันที่ของรูป: ${formattedDate}
+💬 ข้อความ: ${caption || 'ไม่มีข้อความ'}
+⏰ เวลาที่อัปโหลด: ${currentTime}
+📱 ผ่านอุปกรณ์: ${device}
+━━━━━━━━━━━━━━━━━━━━
+✨ เข้าไปชมรูปหวานๆ ในเว็บของเราได้เลยนะคะ 💖`;
+
+      messages.push({
+        type: 'text',
+        text: photoAlertMessage
+      });
+    } else {
+      // Default: Wrong PIN Security Alert
+      const alertMessage = 
 `🚨 [แจ้งเตือนความปลอดภัย] มีคนพยายามปลดล็อกเว็บ!
 ━━━━━━━━━━━━━━━━━━━━
 ❌ สถานะ: ใส่รหัส PIN ไม่ถูกต้อง
@@ -53,6 +99,12 @@ export default async function handler(req, res) {
 ━━━━━━━━━━━━━━━━━━━━
 💬 มีคนแอบกด หรือแฟนจำรหัสวันสำคัญไม่ได้นะ? 🥺`;
 
+      messages.push({
+        type: 'text',
+        text: alertMessage
+      });
+    }
+
     // Push Message to LINE Messaging API
     const response = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
@@ -62,12 +114,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         to: LINE_TARGET_ID,
-        messages: [
-          {
-            type: 'text',
-            text: alertMessage
-          }
-        ]
+        messages: messages
       })
     });
 

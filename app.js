@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePinDots();
   }
 
-  // --- LINE SECURITY NOTIFICATION HELPER ---
+  // --- LINE NOTIFICATION HELPERS ---
   let wrongPinAttempts = 0;
   async function sendWrongPinLineAlert(failedPin) {
     wrongPinAttempts++;
@@ -288,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const payload = {
+        type: 'wrong_pin',
         enteredPin: failedPin,
         attemptCount: wrongPinAttempts,
         timestamp: timeString,
@@ -301,6 +302,40 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (e) {
       console.warn('LINE Security Alert send error:', e);
+    }
+  }
+
+  async function sendPhotoUploadLineAlert(photoData) {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      const payload = {
+        type: 'photo_upload',
+        title: photoData.title,
+        date: photoData.date,
+        category: photoData.category,
+        caption: photoData.caption,
+        imageUrl: photoData.imageSrc,
+        timestamp: timeString,
+        userAgent: navigator.userAgent
+      };
+
+      await fetch('/api/line-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('LINE Photo Upload Alert send error:', e);
     }
   }
 
@@ -872,6 +907,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save to Local & Supabase Cloud
     await savePhotos();
+
+    // Trigger LINE Photo Notification (in background)
+    sendPhotoUploadLineAlert(newPhoto);
   });
 
   function resetUploadForm() {
