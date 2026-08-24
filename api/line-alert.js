@@ -1,5 +1,5 @@
 // ==========================================================================
-// Vercel Serverless Function: LINE Notification Handler (Flex Message)
+// Vercel Serverless Function: LINE Notification Handler (Flex Message & Fallback)
 // ==========================================================================
 
 export default async function handler(req, res) {
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     const currentTime = timestamp || new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
 
     let messages = [];
+    let fallbackMessages = [];
 
     // Check if this is a Photo Upload event
     if (type === 'photo_upload' || (!enteredPin && (title || imageUrl))) {
@@ -60,9 +61,10 @@ export default async function handler(req, res) {
         formattedDate = `${d}/${m}/${y}`;
       }
 
-      // Create LINE Flex Message Card (Matching Premium Real-Estate / Card Template)
+      // Check if image URL is valid HTTPS (for Flex Hero Image)
       const isHttpsImage = typeof imageUrl === 'string' && imageUrl.startsWith('https://');
 
+      // 1. PRIMARY: Premium LINE Flex Message Card
       const flexBubble = {
         type: 'bubble',
         size: 'mega',
@@ -80,8 +82,7 @@ export default async function handler(req, res) {
               text: 'FRESHMAIYUU',
               color: '#8EA8C3',
               size: 'xs',
-              weight: 'bold',
-              letterSpacing: '1px'
+              weight: 'bold'
             },
             {
               type: 'text',
@@ -237,7 +238,6 @@ export default async function handler(req, res) {
         }
       };
 
-      // If valid HTTPS cloud image URL exists, set it as hero image
       if (isHttpsImage) {
         flexBubble.hero = {
           type: 'image',
@@ -253,8 +253,30 @@ export default async function handler(req, res) {
         altText: `📸 มีรูปภาพความทรงจำใหม่: ${title || 'ความทรงจำของเรา'} 💕`,
         contents: flexBubble
       });
+
+      // 2. FALLBACK: Plain text + image if Flex is rejected
+      if (isHttpsImage) {
+        fallbackMessages.push({
+          type: 'image',
+          originalContentUrl: imageUrl,
+          previewImageUrl: imageUrl
+        });
+      }
+      fallbackMessages.push({
+        type: 'text',
+        text: `📸 [แจ้งเตือนความทรงจำใหม่] มีคนอัปรูปใหม่ในเว็บแล้ว! 💕
+━━━━━━━━━━━━━━━━━━━━
+🌸 หัวข้อ: ${title || 'ความทรงจำของเรา'}
+🏷️ หมวดหมู่: ${catLabel}
+📅 วันที่ของรูป: ${formattedDate}
+💬 ข้อความ: ${caption || 'ไม่มีข้อความ'}
+⏰ เวลาที่อัปโหลด: ${currentTime}
+📱 ผ่านอุปกรณ์: ${device}
+━━━━━━━━━━━━━━━━━━━━
+✨ เข้าไปชมรูปหวานๆ ในเว็บของเราได้เลยนะคะ 💖`
+      });
     } else {
-      // Default: Wrong PIN Security Alert (Formatted as Flex Message)
+      // Default: Wrong PIN Security Alert
       const securityBubble = {
         type: 'bubble',
         size: 'mega',
@@ -272,8 +294,7 @@ export default async function handler(req, res) {
               text: 'SECURITY ALERT',
               color: '#FCA5A5',
               size: 'xs',
-              weight: 'bold',
-              letterSpacing: '1px'
+              weight: 'bold'
             },
             {
               type: 'text',
@@ -426,10 +447,23 @@ export default async function handler(req, res) {
         altText: '🚨 [แจ้งเตือนความปลอดภัย] มีคนพยายามปลดล็อกเว็บ!',
         contents: securityBubble
       });
+
+      fallbackMessages.push({
+        type: 'text',
+        text: `🚨 [แจ้งเตือนความปลอดภัย] มีคนพยายามปลดล็อกเว็บ!
+━━━━━━━━━━━━━━━━━━━━
+❌ สถานะ: ใส่รหัส PIN ไม่ถูกต้อง
+🔢 รหัสที่ลองกด: ${enteredPin || 'ไม่ระบุ'}
+⚠️ ใส่ผิดครั้งที่: ${attemptCount || 1}
+⏰ เวลา: ${currentTime}
+📱 อุปกรณ์: ${device}
+━━━━━━━━━━━━━━━━━━━━
+💬 มีคนแอบกด หรือแฟนจำรหัสวันสำคัญไม่ได้นะ? 🥺`
+      });
     }
 
-    // Push Message to LINE Messaging API
-    const response = await fetch('https://api.line.me/v2/bot/message/push', {
+    // Try sending Primary Flex Message
+    let response = await fetch('https://api.line.me/v2/bot/message/push', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -441,7 +475,24 @@ export default async function handler(req, res) {
       })
     });
 
-    const data = await response.json().catch(() => ({}));
+    let data = await response.json().catch(() => ({}));
+
+    // If Flex Message was rejected, automatically fallback to text message
+    if (!response.ok && fallbackMessages.length > 0) {
+      console.warn('LINE Flex failed, retrying with Fallback message:', data);
+      response = await fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LINE_ACCESS_TOKEN}`
+        },
+        body: JSON.stringify({
+          to: LINE_TARGET_ID,
+          messages: fallbackMessages
+        })
+      });
+      data = await response.json().catch(() => ({}));
+    }
 
     if (!response.ok) {
       console.error('LINE API Error:', data);
