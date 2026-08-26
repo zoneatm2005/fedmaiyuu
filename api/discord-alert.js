@@ -56,7 +56,8 @@ export default async function handler(req, res) {
         'Cute': 'ช่วงเวลาน่ารัก 🐱',
         'First Date': 'เดตแรก ☕',
         'Trips': 'ทริปเที่ยว ✈️',
-        'Anniversary': 'วันครบรอบ 🎉'
+        'Anniversary': 'วันครบรอบ 🎉',
+        'Birthday': 'วันเกิด 🎂'
       };
       const catLabel = categoryMap[category] || category || 'ความทรงจำ 💕';
 

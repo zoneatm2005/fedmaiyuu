@@ -193,10 +193,102 @@ document.addEventListener('DOMContentLoaded', () => {
   const ITEMS_PER_PAGE = 9;
   let counterInterval = null;
 
+  // --- SPECIAL ANNUAL DATES & CUSTOM GREETINGS CONFIGURATION ---
+  const DEFAULT_GREETINGS = {
+    'birthday-moo': 'สุขสันต์วันเกิดนะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨',
+    'birthday-auan': 'สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨',
+    'anniversary-monthly': 'สุขสันต์วันครบรอบนะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)',
+    'anniversary-yearly': '🎉 วันนี้วันครบรอบใหญ่ประจำปีของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)'
+  };
+
+  let customGreetings = {};
+  try {
+    const rawG = localStorage.getItem('love_custom_greetings');
+    if (rawG) {
+      customGreetings = JSON.parse(rawG) || {};
+    }
+  } catch (e) { }
+
+  /**
+   * Retrieves greeting for a specific date (dateStr: YYYY-MM-DD)
+   * Falls back to general template key or default message if not yet set for this specific date.
+   */
+  function getGreetingForDate(dateStr, templateKey) {
+    if (customGreetings && typeof customGreetings[dateStr] === 'string') {
+      return customGreetings[dateStr];
+    }
+    if (customGreetings && typeof customGreetings[templateKey] === 'string') {
+      return customGreetings[templateKey];
+    }
+    return DEFAULT_GREETINGS[templateKey] || '';
+  }
+
+  async function saveCustomGreetingForDate(dateStr, newText) {
+    if (!customGreetings) customGreetings = {};
+    customGreetings[dateStr] = (newText !== undefined && newText !== null) ? newText.trim() : '';
+    try {
+      localStorage.setItem('love_custom_greetings', JSON.stringify(customGreetings));
+    } catch (e) { }
+    await pushToCloud();
+    if (customGreetings[dateStr]) {
+      showToast('บันทึกคำอวยพรของรอบนี้เรียบร้อยแล้ว 💕 (ซิงก์เรียลไทม์แล้ว)', 'success');
+    } else {
+      showToast('บันทึกเรียบร้อย (เว้นว่างคำอวยพรของรอบนี้ไว้) ✨', 'info');
+    }
+    checkTodaySpecialCelebrations();
+    renderSpecialAnnualDates();
+  }
+
+  async function resetCustomGreetingForDate(dateStr, templateKey) {
+    if (!customGreetings) customGreetings = {};
+    if (customGreetings.hasOwnProperty(dateStr)) {
+      delete customGreetings[dateStr];
+    }
+    try {
+      localStorage.setItem('love_custom_greetings', JSON.stringify(customGreetings));
+    } catch (e) { }
+    await pushToCloud();
+    showToast('คืนค่าคำอวยพรเริ่มต้นเรียบร้อยแล้ว ✨', 'info');
+    checkTodaySpecialCelebrations();
+    renderSpecialAnnualDates();
+    return DEFAULT_GREETINGS[templateKey] || '';
+  }
+
+  const SPECIAL_ANNUAL_DATES = [
+    {
+      id: 'birthday-moo',
+      month: 4,
+      day: 28,
+      monthDay: '04-28',
+      title: 'วันเกิดหมู',
+      shortTitle: 'วันเกิดหมู',
+      badgeText: '🎂 วันเกิดหมู',
+      emoji: '🎂',
+      person: 'หมู',
+      cardClass: 'birthday-moo',
+      icon: '🐷',
+      formattedDate: '28 เมษายน (28/04)'
+    },
+    {
+      id: 'birthday-auan',
+      month: 5,
+      day: 6,
+      monthDay: '05-06',
+      title: 'วันเกิดอ้วน',
+      shortTitle: 'วันเกิดอ้วน',
+      badgeText: '🎂 วันเกิดอ้วน',
+      emoji: '🎂',
+      person: 'อ้วน',
+      cardClass: 'birthday-auan',
+      icon: '🐻',
+      formattedDate: '6 พฤษภาคม (06/05)'
+    }
+  ];
+
   // --- PIN LOCK SYSTEM STATE ---
   let enteredPin = '';
   const PIN_LENGTH = 6;
-  const VALID_PINS = ['020869',];
+  const VALID_PINS = ['020869', '020826', '280469', '280426', '060569', '060526'];
 
   // ==========================================================================
   // 1. INITIALIZATION & PIN PASSCODE UNLOCK LOGIC
@@ -223,6 +315,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderGallery();
     renderCalendar();
     renderBucketList();
+    renderSpecialAnnualDates();
+    checkTodaySpecialCelebrations();
     updateYouMeStats();
 
     // Start Online Realtime Cloud Data Sync (Supabase WebSockets & Fallback)
@@ -373,7 +467,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'Cute': 'ช่วงเวลาน่ารัก 🐱',
         'First Date': 'เดตแรก ☕',
         'Trips': 'ทริปเที่ยว ✈️',
-        'Anniversary': 'วันครบรอบ 🎉'
+        'Anniversary': 'วันครบรอบ 🎉',
+        'Birthday': 'วันเกิด 🎂'
       };
       const catLabel = categoryMap[photoData.category] || photoData.category || 'ความทรงจำ 💕';
 
@@ -383,8 +478,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formattedDate = `${d}/${m}/${y}`;
       }
 
-      const captionText = photoData.caption 
-        ? photoData.caption 
+      const captionText = photoData.caption
+        ? photoData.caption
         : 'บันทึกความทรงจำและช่วงเวลาสุดพิเศษของเราสองคน 💕';
 
       const embed = {
@@ -581,7 +676,205 @@ document.addEventListener('DOMContentLoaded', () => {
     // Format Date string DD/MM/YYYY
     const parts = config.anniversaryDate.split('-');
     const formatted = `${parts[2]}/${parts[1]}/${parts[0]}`;
-    displayAnniversaryDate.innerHTML = `<i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: ${formatted}`;
+    displayAnniversaryDate.innerHTML = `<i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: วันที่ 2 ของทุกเดือน (เริ่ม ${formatted})`;
+  }
+
+  // --- SPECIAL ANNUAL DATES COUNTDOWN & BIRTHDAYS LOGIC ---
+  function calculateDaysUntil(targetMonth, targetDay) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1; // 1-12
+    const currentDay = today.getDate();
+
+    // Exact day
+    if (currentMonth === targetMonth && currentDay === targetDay) {
+      return 0;
+    }
+
+    // Set target date for current year at start of day
+    let target = new Date(currentYear, targetMonth - 1, targetDay, 0, 0, 0);
+    const startOfToday = new Date(currentYear, today.getMonth(), currentDay, 0, 0, 0);
+
+    if (target.getTime() < startOfToday.getTime()) {
+      target = new Date(currentYear + 1, targetMonth - 1, targetDay, 0, 0, 0);
+    }
+
+    const oneDay = 1000 * 60 * 60 * 24;
+    return Math.ceil((target.getTime() - startOfToday.getTime()) / oneDay);
+  }
+
+  function calculateDaysUntilNextMonthlyDate(targetDay = 2) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-11
+    const currentDate = today.getDate();
+
+    if (currentDate === targetDay) {
+      return {
+        daysUntil: 0,
+        targetMonth: currentMonth + 1,
+        targetDay: targetDay,
+        targetYear: currentYear
+      };
+    }
+
+    let nextTarget;
+    if (currentDate < targetDay) {
+      nextTarget = new Date(currentYear, currentMonth, targetDay, 0, 0, 0);
+    } else {
+      nextTarget = new Date(currentYear, currentMonth + 1, targetDay, 0, 0, 0);
+    }
+
+    const startOfToday = new Date(currentYear, currentMonth, currentDate, 0, 0, 0);
+    const oneDay = 1000 * 60 * 60 * 24;
+    const daysUntil = Math.ceil((nextTarget.getTime() - startOfToday.getTime()) / oneDay);
+
+    return {
+      daysUntil,
+      targetMonth: nextTarget.getMonth() + 1,
+      targetDay: targetDay,
+      targetYear: nextTarget.getFullYear()
+    };
+  }
+
+  function renderSpecialAnnualDates() {
+    const specialGrid = document.getElementById('special-dates-grid');
+    if (!specialGrid) return;
+
+    specialGrid.innerHTML = '';
+
+    // 1. วันเกิดหมู (28 เมษายน)
+    const mooBday = SPECIAL_ANNUAL_DATES.find(d => d.id === 'birthday-moo') || { month: 4, day: 28 };
+    const mooDaysUntil = calculateDaysUntil(mooBday.month, mooBday.day);
+
+    // 2. วันเกิดอ้วน (6 พฤษภาคม)
+    const auanBday = SPECIAL_ANNUAL_DATES.find(d => d.id === 'birthday-auan') || { month: 5, day: 6 };
+    const auanDaysUntil = calculateDaysUntil(auanBday.month, auanBday.day);
+
+    // 3. วันครบรอบรายเดือน (วันที่ 2 ของทุกเดือน)
+    const monthlyAnni = calculateDaysUntilNextMonthlyDate(2);
+
+    const items = [
+      {
+        id: 'anniversary',
+        title: 'วันครบรอบของเรา 💕',
+        dateText: 'วันที่ 2 ของทุกเดือน',
+        targetMonth: monthlyAnni.targetMonth,
+        targetDay: 2,
+        daysUntil: monthlyAnni.daysUntil,
+        cardClass: 'anniversary',
+        icon: '💖',
+        badgeBg: monthlyAnni.daysUntil === 0 ? 'today-is-day' : '',
+        badgeText: monthlyAnni.daysUntil === 0 ? '🎉 วันนี้วันครบรอบ!' : `อีก ${monthlyAnni.daysUntil} วัน`
+      },
+      {
+        id: 'birthday-moo',
+        title: 'วันเกิดหมู 🐷🎂',
+        dateText: '28 เมษายน ของทุกปี',
+        targetMonth: 4,
+        targetDay: 28,
+        daysUntil: mooDaysUntil,
+        cardClass: 'birthday-moo',
+        icon: '🐷',
+        badgeBg: mooDaysUntil === 0 ? 'today-is-day' : '',
+        badgeText: mooDaysUntil === 0 ? '🎉 วันนี้วันเกิดหมู!' : `อีก ${mooDaysUntil} วัน`
+      },
+      {
+        id: 'birthday-auan',
+        title: 'วันเกิดอ้วน 🐻🎂',
+        dateText: '6 พฤษภาคม ของทุกปี',
+        targetMonth: 5,
+        targetDay: 6,
+        daysUntil: auanDaysUntil,
+        cardClass: 'birthday-auan',
+        icon: '🐻',
+        badgeBg: auanDaysUntil === 0 ? 'today-is-day' : '',
+        badgeText: auanDaysUntil === 0 ? '🎉 วันนี้วันเกิดอ้วน!' : `อีก ${auanDaysUntil} วัน`
+      }
+    ];
+
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = `special-date-card ${item.cardClass}`;
+      card.innerHTML = `
+        <div class="special-date-top">
+          <div class="special-date-icon">${item.icon}</div>
+          <div>
+            <div class="special-date-name">${item.title}</div>
+            <div class="special-date-daytext">🗓️ ${item.dateText}</div>
+          </div>
+        </div>
+        <div class="special-date-bottom">
+          <span class="special-date-countdown-badge ${item.badgeBg}">
+            <i class="fa-solid fa-clock"></i> ${item.badgeText}
+          </span>
+          <span class="special-date-arrow" title="ดูในปฏิทิน">
+            ดูปฏิทิน <i class="fa-solid fa-arrow-right"></i>
+          </span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        // Switch to calendar tab and navigate to that month and open day modal
+        currentCalYear = new Date().getFullYear();
+        currentCalMonth = item.targetMonth - 1;
+        const calTabBtn = document.querySelector('.nav-tab[data-tab="tab-calendar"]');
+        if (calTabBtn) calTabBtn.click();
+        renderCalendar();
+
+        const dateStr = `${currentCalYear}-${String(item.targetMonth).padStart(2, '0')}-${String(item.targetDay).padStart(2, '0')}`;
+        setTimeout(() => {
+          openCalendarDayModal(dateStr);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 180);
+      });
+
+      specialGrid.appendChild(card);
+    });
+  }
+
+  function checkTodaySpecialCelebrations() {
+    const todayBanner = document.getElementById('today-birthday-banner');
+    if (!todayBanner) return;
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth() + 1;
+    const currentDay = today.getDate();
+    const currentMonthDay = `${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+    const todayStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+
+    const matchedSpecial = SPECIAL_ANNUAL_DATES.find(s => s.monthDay === currentMonthDay);
+    if (matchedSpecial) {
+      const greeting = getGreetingForDate(todayStr, matchedSpecial.id);
+      todayBanner.style.display = 'block';
+      todayBanner.innerHTML = `
+        <div class="today-bday-heading">
+          🎉 สุขสันต์วันเกิดนะ${matchedSpecial.person}! ${matchedSpecial.icon}🎂💖
+        </div>
+        ${greeting ? `<div class="today-bday-sub">${escapeHtml(greeting)}</div>` : ''}
+      `;
+      setTimeout(() => {
+        spawnHeartBurst(window.innerWidth / 2, 200, 35);
+      }, 400);
+    } else if (currentDay === 2) {
+      // วันที่ 2 ของทุกเดือนคือวันครบรอบ
+      const isYearly = (currentMonth === 8 && currentDay === 2);
+      const templateKey = isYearly ? 'anniversary-yearly' : 'anniversary-monthly';
+      const greeting = getGreetingForDate(todayStr, templateKey);
+      todayBanner.style.display = 'block';
+      todayBanner.innerHTML = `
+        <div class="today-bday-heading">
+          💖 สุขสันต์วันครบรอบนะที่รัก! (วันที่ 2 ของทุกเดือน) 💕
+        </div>
+        ${greeting ? `<div class="today-bday-sub">${escapeHtml(greeting)}</div>` : ''}
+      `;
+      setTimeout(() => {
+        spawnHeartBurst(window.innerWidth / 2, 200, 35);
+      }, 400);
+    } else {
+      todayBanner.style.display = 'none';
+    }
   }
 
   // ==========================================================================
@@ -1076,6 +1369,15 @@ document.addEventListener('DOMContentLoaded', () => {
               try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
             }
 
+            if (d.customGreetings && typeof d.customGreetings === 'object') {
+              if (JSON.stringify(d.customGreetings) !== JSON.stringify(customGreetings)) {
+                customGreetings = Object.assign({}, d.customGreetings);
+                try { localStorage.setItem('love_custom_greetings', JSON.stringify(customGreetings)); } catch (e) { }
+                renderSpecialAnnualDates();
+                checkTodaySpecialCelebrations();
+              }
+            }
+
             if (Array.isArray(d.photos)) cloudPhotos = d.photos;
             if (Array.isArray(d.bucketList)) cloudBucket = d.bucketList;
             if (Array.isArray(d.calendarNotes)) cloudCalendar = d.calendarNotes;
@@ -1154,6 +1456,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
               }
 
+              if (d.customGreetings && typeof d.customGreetings === 'object') {
+                if (JSON.stringify(d.customGreetings) !== JSON.stringify(customGreetings)) {
+                  customGreetings = Object.assign({}, d.customGreetings);
+                  try { localStorage.setItem('love_custom_greetings', JSON.stringify(customGreetings)); } catch (e) { }
+                  renderSpecialAnnualDates();
+                  checkTodaySpecialCelebrations();
+                }
+              }
+
               if (!cloudPhotos && Array.isArray(d.photos)) cloudPhotos = d.photos;
               if (!cloudBucket && Array.isArray(d.bucketList)) cloudBucket = d.bucketList;
               if (!cloudCalendar && Array.isArray(d.calendarNotes)) cloudCalendar = d.calendarNotes;
@@ -1180,6 +1491,15 @@ document.addEventListener('DOMContentLoaded', () => {
               if (Array.isArray(data.deletedBucketIds)) {
                 data.deletedBucketIds.forEach(id => { if (!deletedBucketIds.includes(String(id))) deletedBucketIds.push(String(id)); });
                 try { localStorage.setItem('love_deleted_bucket', JSON.stringify(deletedBucketIds)); } catch (e) { }
+              }
+
+              if (data.customGreetings && typeof data.customGreetings === 'object') {
+                if (JSON.stringify(data.customGreetings) !== JSON.stringify(customGreetings)) {
+                  customGreetings = Object.assign({}, data.customGreetings);
+                  try { localStorage.setItem('love_custom_greetings', JSON.stringify(customGreetings)); } catch (e) { }
+                  renderSpecialAnnualDates();
+                  checkTodaySpecialCelebrations();
+                }
               }
 
               if (Array.isArray(data.photos)) cloudPhotos = data.photos;
@@ -1254,6 +1574,7 @@ document.addEventListener('DOMContentLoaded', () => {
         photos: photos,
         bucketList: bucketList,
         calendarNotes: calendarNotes,
+        customGreetings: customGreetings,
         deletedPhotoIds: deletedPhotoIds,
         deletedCalendarIds: deletedCalendarIds,
         deletedBucketIds: deletedBucketIds,
@@ -1470,8 +1791,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const dayNum = totalDaysInPrevMonth - i;
       const prevDate = new Date(currentCalYear, currentCalMonth - 1, dayNum);
       const dateStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}-${String(prevDate.getDate()).padStart(2, '0')}`;
+      const isAnniversary = (dayNum === 2);
 
-      const dayCell = createCalendarDayCell(dayNum, dateStr, true);
+      const dayCell = createCalendarDayCell(dayNum, dateStr, true, false, isAnniversary);
       calendarDaysGrid.appendChild(dayCell);
     }
 
@@ -1479,7 +1801,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let d = 1; d <= totalDaysInMonth; d++) {
       const dateStr = `${currentCalYear}-${String(currentCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const isToday = (dateStr === todayStr);
-      const isAnniversary = (anniMonthDay && dateStr.endsWith(anniMonthDay));
+      const isAnniversary = (d === 2); // วันที่ 2 ของทุกเดือนคือวันครบรอบ
 
       const dayCell = createCalendarDayCell(d, dateStr, false, isToday, isAnniversary);
       calendarDaysGrid.appendChild(dayCell);
@@ -1493,16 +1815,21 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let nextDay = 1; nextDay <= remainingDays; nextDay++) {
       const nextDate = new Date(currentCalYear, currentCalMonth + 1, nextDay);
       const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+      const isAnniversary = (nextDay === 2);
 
-      const dayCell = createCalendarDayCell(nextDay, dateStr, true);
+      const dayCell = createCalendarDayCell(nextDay, dateStr, true, false, isAnniversary);
       calendarDaysGrid.appendChild(dayCell);
     }
     updateYouMeStats();
   }
 
   function createCalendarDayCell(dayNum, dateStr, isOtherMonth = false, isToday = false, isAnniversary = false) {
+    const matchedBirthday = SPECIAL_ANNUAL_DATES.find(b => dateStr.endsWith(b.monthDay));
+    const isBirthday = !isOtherMonth && !!matchedBirthday;
+    const isDay2 = (isAnniversary || dayNum === 2);
+
     const dayCell = document.createElement('div');
-    dayCell.className = `cal-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isAnniversary ? 'anniversary-day' : ''}`;
+    dayCell.className = `cal-day-cell ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isDay2 ? 'anniversary-day' : ''} ${isBirthday ? 'birthday-day' : ''}`;
     dayCell.dataset.date = dateStr;
 
     // Day of week class for coloring (Sunday / Saturday)
@@ -1520,8 +1847,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isToday) {
       badgesHtml += `<span class="badge-tag badge-today">วันนี้</span>`;
     }
-    if (isAnniversary) {
-      badgesHtml += `<span class="badge-tag badge-anni" title="วันครบรอบของเรา 💕">💖 ครบรอบ</span>`;
+    if (isDay2) {
+      const isYearly = dateStr.endsWith('-08-02');
+      badgesHtml += `<span class="badge-tag badge-anni" title="${isYearly ? 'วันครบรอบใหญ่ของเรา (02/08) 💕' : 'วันครบรอบประจำเดือน (วันที่ 2 ของทุกเดือน) 💕'}">💖 ครบรอบ</span>`;
+    }
+    if (isBirthday && matchedBirthday) {
+      badgesHtml += `<span class="badge-tag badge-birthday" title="${matchedBirthday.title}">🎂 ${matchedBirthday.shortTitle}</span>`;
     }
 
     let entriesHtml = '';
@@ -1592,6 +1923,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (calModalBadge) {
       calModalBadge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ${dayName}ที่ ${dayNum} ${monthName} ${yearBE}`;
+    }
+
+    // Remove existing birthday/anniversary hero if any
+    const existingHero = calendarModal.querySelector('.cal-birthday-hero-box');
+    if (existingHero) existingHero.remove();
+
+    const matchedBirthday = SPECIAL_ANNUAL_DATES.find(b => dateStr.endsWith(b.monthDay));
+    let specialTypeKey = null;
+    let specialTitle = '';
+    let specialIcon = '';
+
+    if (matchedBirthday) {
+      specialTypeKey = matchedBirthday.id;
+      specialTitle = `✨ วันสำคัญประจำปี: ${matchedBirthday.title} (${matchedBirthday.formattedDate}) 🎉`;
+      specialIcon = matchedBirthday.icon;
+    } else if (dayNum === 2) {
+      const isYearly = dateStr.endsWith('-08-02');
+      specialTypeKey = isYearly ? 'anniversary-yearly' : 'anniversary-monthly';
+      specialTitle = isYearly ? '✨ วันครบรอบใหญ่ประจำปี (2 สิงหาคม) 💕' : '✨ วันครบรอบประจำเดือนของเรา (วันที่ 2 ของทุกเดือน) 💕';
+      specialIcon = '💖';
+    }
+
+    if (specialTypeKey) {
+      const currentGreetingText = getGreetingForDate(dateStr, specialTypeKey);
+      const isAnni = specialTypeKey.startsWith('anniversary');
+      const formattedGreetingHtml = currentGreetingText
+        ? escapeHtml(currentGreetingText)
+        : '<span style="opacity: 0.6; font-style: italic; font-size: 0.85rem;">(ไม่มีข้อความคำอวยพรของรอบนี้ - กดรูปปากกา ✏️ เพื่อเขียนได้นะคะ)</span>';
+
+      const heroBox = document.createElement('div');
+      heroBox.className = 'cal-birthday-hero-box';
+      if (isAnni) {
+        heroBox.style.borderColor = '#ff4081';
+        heroBox.style.background = 'linear-gradient(135deg, #fff0f5 0%, #ffe4ec 100%)';
+      }
+
+      heroBox.innerHTML = `
+        <div class="cal-birthday-hero-icon">${specialIcon}</div>
+        <div class="cal-birthday-hero-body">
+          <div class="cal-birthday-hero-title" style="${isAnni ? 'color: #d81b60;' : ''}">${specialTitle}</div>
+          <div class="cal-birthday-hero-desc" id="hero-greeting-view">${formattedGreetingHtml}</div>
+          
+          <div class="cal-birthday-hero-edit-mode" id="hero-greeting-edit" style="display: none; margin-top: 8px;">
+            <textarea id="hero-greeting-input" class="hero-edit-textarea" rows="3" placeholder="เขียนคำอวยพรเฉพาะของรอบนี้... (สามารถเว้นว่างไว้ได้)"></textarea>
+            <div class="hero-edit-actions">
+              <button type="button" id="btn-save-greeting" class="btn-hero-action save">
+                <i class="fa-solid fa-check"></i> บันทึกคำอวยพร
+              </button>
+              <button type="button" id="btn-cancel-greeting" class="btn-hero-action cancel">
+                ยกเลิก
+              </button>
+              <button type="button" id="btn-reset-greeting" class="btn-hero-action reset" title="รีเซ็ตเป็นคำอวยพรเริ่มต้น">
+                <i class="fa-solid fa-rotate-left"></i> คืนค่าเดิม
+              </button>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn-edit-greeting-trigger" id="btn-edit-greeting-trigger" title="แก้ไขข้อความคำอวยพรของวันนี้">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+      `;
+
+      const modalHeader = calendarModal.querySelector('.cal-modal-header');
+      if (modalHeader) {
+        modalHeader.insertAdjacentElement('afterend', heroBox);
+      }
+
+      // Attach Edit Listeners
+      const btnEditTrigger = heroBox.querySelector('#btn-edit-greeting-trigger');
+      const viewArea = heroBox.querySelector('#hero-greeting-view');
+      const editArea = heroBox.querySelector('#hero-greeting-edit');
+      const textarea = heroBox.querySelector('#hero-greeting-input');
+      const btnSave = heroBox.querySelector('#btn-save-greeting');
+      const btnCancel = heroBox.querySelector('#btn-cancel-greeting');
+      const btnReset = heroBox.querySelector('#btn-reset-greeting');
+
+      if (btnEditTrigger && viewArea && editArea && textarea) {
+        btnEditTrigger.addEventListener('click', () => {
+          textarea.value = getGreetingForDate(dateStr, specialTypeKey);
+          viewArea.style.display = 'none';
+          btnEditTrigger.style.display = 'none';
+          editArea.style.display = 'block';
+          setTimeout(() => textarea.focus(), 100);
+        });
+
+        btnCancel.addEventListener('click', () => {
+          editArea.style.display = 'none';
+          viewArea.style.display = 'block';
+          btnEditTrigger.style.display = 'flex';
+        });
+
+        btnReset.addEventListener('click', async () => {
+          const defaultText = await resetCustomGreetingForDate(dateStr, specialTypeKey);
+          textarea.value = defaultText;
+          viewArea.innerHTML = defaultText
+            ? escapeHtml(defaultText)
+            : '<span style="opacity: 0.6; font-style: italic; font-size: 0.85rem;">(ไม่มีข้อความคำอวยพรของรอบนี้ - กดรูปปากกา ✏️ เพื่อเขียนได้นะคะ)</span>';
+          editArea.style.display = 'none';
+          viewArea.style.display = 'block';
+          btnEditTrigger.style.display = 'flex';
+        });
+
+        btnSave.addEventListener('click', async () => {
+          const newText = textarea.value.trim();
+          await saveCustomGreetingForDate(dateStr, newText);
+          viewArea.innerHTML = newText
+            ? escapeHtml(newText)
+            : '<span style="opacity: 0.6; font-style: italic; font-size: 0.85rem;">(ไม่มีข้อความคำอวยพรของรอบนี้ - กดรูปปากกา ✏️ เพื่อเขียนได้นะคะ)</span>';
+          editArea.style.display = 'none';
+          viewArea.style.display = 'block';
+          btnEditTrigger.style.display = 'flex';
+          if (newText) {
+            spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
+          }
+        });
+      }
     }
 
     // 2. Render Existing Entries for this Date
@@ -2016,6 +2463,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const done = bucketList.filter(b => b.completed).length;
       statBucket.textContent = `${done}/${bucketList.length}`;
     }
+    renderSpecialAnnualDates();
   }
 
   document.querySelectorAll('.youme-stat-card').forEach(card => {

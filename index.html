@@ -63,7 +63,7 @@
         <i class="fa-regular fa-lightbulb"></i> คำใบ้รหัสผ่าน
       </p>
       <p id="hint-text" style="display: none; margin-top: 8px; font-size: 0.88rem; color: var(--primary);">
-        รหัส PIN 8 หลักคือ <b>วันที่เราคบกัน</b>
+        รหัส PIN 6 หลักคือ <b>วันที่เราคบกันหรือวันเกิด</b>
       </p>
     </div>
   </div>
@@ -117,7 +117,7 @@
       <div class="hero-card">
         <h2 class="couple-names" id="display-couple-names">You & Me 💕</h2>
         <div class="anniversary-badge" id="display-anniversary-date">
-          <i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: 02/08/2026
+          <i class="fa-solid fa-calendar-heart"></i> วันครบรอบ: วันที่ 2 ของทุกเดือน (เริ่ม 02/08/2026)
         </div>
 
         <div class="counter-grid">
@@ -144,9 +144,27 @@
         </div>
 
         <div class="youme-actions" style="margin-top: 24px;">
-          <button type="button" id="send-love-heart-btn" class="btn btn-primary" style="padding: 12px 28px; font-size: 1rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 75, 114, 0.35);">
+          <button type="button" id="send-love-heart-btn" class="btn btn-primary"
+            style="padding: 12px 28px; font-size: 1rem; border-radius: 50px; box-shadow: 0 4px 15px rgba(255, 75, 114, 0.35);">
             <i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 1s;"></i> ส่งความรักให้เธอ 💖
           </button>
+        </div>
+      </div>
+
+      <!-- Today Birthday Alert Banner (Active on Birthdays) -->
+      <div id="today-birthday-banner" class="today-birthday-banner" style="display: none;"></div>
+
+      <!-- Special Annual Dates & Birthdays Countdown Section -->
+      <div class="special-dates-section">
+        <div class="special-dates-header">
+          <h3 class="special-dates-title">
+            <i class="fa-solid fa-cake-candles" style="color: var(--primary);"></i> วันสำคัญ & วันเกิดของเราสองคน 💕
+          </h3>
+          <span class="special-dates-subtitle">นับถอยหลังสู่วันพิเศษประจำปี</span>
+        </div>
+
+        <div class="special-dates-grid" id="special-dates-grid">
+          <!-- Rendered dynamically via JavaScript -->
         </div>
       </div>
 
@@ -191,6 +209,7 @@
           <button class="filter-chip" data-filter="First Date">เดตแรก ☕</button>
           <button class="filter-chip" data-filter="Trips">ทริปเที่ยว ✈️</button>
           <button class="filter-chip" data-filter="Anniversary">วันครบรอบ 🎉</button>
+          <button class="filter-chip" data-filter="Birthday">วันเกิด 🎂</button>
           <button class="filter-chip" data-filter="Cute">ช่วงเวลาน่ารัก 🐱</button>
         </div>
 
@@ -298,6 +317,7 @@
         <div class="calendar-legend">
           <div class="legend-item"><span class="legend-dot today-dot"></span> วันนี้</div>
           <div class="legend-item"><span class="legend-dot anniversary-dot"></span> วันครบรอบ 💕</div>
+          <div class="legend-item"><span class="legend-dot birthday-dot"></span> วันเกิด 🎂</div>
           <div class="legend-item"><span class="legend-dot entry-dot"></span> มีบันทึกกิจกรรม 📝</div>
           <div class="legend-item"><span class="legend-dot photo-dot"></span> มีรูปถ่าย 📸</div>
         </div>
@@ -356,7 +376,7 @@
             <input type="text" id="photo-title-input" placeholder="เช่น ไปเที่ยวทะเลด้วยกันครั้งแรก 🌊" required>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div style="grid-template-columns: 1fr 1fr; display: grid; gap: 12px;">
             <div>
               <label
                 style="font-weight: 500; font-size: 0.9rem; margin-bottom: 4px; display: block;">วันที่ของรูปภาพ</label>
@@ -369,6 +389,7 @@
                 <option value="First Date">เดตแรก ☕</option>
                 <option value="Trips">ทริปเที่ยว ✈️</option>
                 <option value="Anniversary">วันครบรอบ 🎉</option>
+                <option value="Birthday">วันเกิด 🎂</option>
               </select>
             </div>
           </div>
@@ -480,6 +501,7 @@
               <button type="button" class="mood-chip active" data-mood="💖" data-cat="date">💖 เดต</button>
               <button type="button" class="mood-chip" data-mood="🍲" data-cat="food">🍲 กินข้าว</button>
               <button type="button" class="mood-chip" data-mood="✈️" data-cat="trip">✈️ เที่ยว</button>
+              <button type="button" class="mood-chip" data-mood="🎂" data-cat="birthday">🎂 วันเกิด</button>
               <button type="button" class="mood-chip" data-mood="🍿" data-cat="movie">🍿 ดูหนัง</button>
               <button type="button" class="mood-chip" data-mood="☕" data-cat="cafe">☕ คาเฟ่</button>
               <button type="button" class="mood-chip" data-mood="🛍️" data-cat="shopping">🛍️ ช้อปปิ้ง</button>
