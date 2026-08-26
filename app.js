@@ -271,9 +271,22 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePinDots();
   }
 
-  // --- LINE NOTIFICATION HELPERS ---
+  // --- DISCORD NOTIFICATION HELPERS ---
+  const DISCORD_WRONG_PIN_WEBHOOK = 'https://discord.com/api/webhooks/1542139526372270150/s3HQJiI_Zn3xYUi_IznNh23tzl9lWZhKHt9WjW_JSTVYfcmBZdO3r9KKKP9LO7vYanlA';
+  const DISCORD_PHOTO_UPLOAD_WEBHOOK = 'https://discord.com/api/webhooks/1542140418924216345/86zGkPkSxNHnlU1UJ0KDhNPzQ51On1zMj2uaRRKRdfhj0jyM9MoIdolz6IlhigzJww8v';
+
+  function getDeviceInfo() {
+    const ua = navigator.userAgent;
+    if (/iPhone/i.test(ua)) return '📱 iPhone (iOS)';
+    if (/iPad/i.test(ua)) return '📱 iPad (iPadOS)';
+    if (/Android/i.test(ua)) return '📱 โทรศัพท์ Android';
+    if (/Windows NT/i.test(ua)) return '💻 คอมพิวเตอร์ Windows';
+    if (/Macintosh/i.test(ua)) return '💻 เครื่อง Mac';
+    return '🌐 อุปกรณ์ทั่วไป';
+  }
+
   let wrongPinAttempts = 0;
-  async function sendWrongPinLineAlert(failedPin) {
+  async function sendWrongPinDiscordAlert(failedPin) {
     wrongPinAttempts++;
     try {
       const now = new Date();
@@ -286,26 +299,64 @@ document.addEventListener('DOMContentLoaded', () => {
         minute: '2-digit',
         second: '2-digit'
       });
+      const device = getDeviceInfo();
 
-      const payload = {
-        type: 'wrong_pin',
-        enteredPin: failedPin,
-        attemptCount: wrongPinAttempts,
-        timestamp: timeString,
-        userAgent: navigator.userAgent
+      const discordPayload = {
+        username: '₊˚ 🚨 Love Security Radar 🚨 ˚₊',
+        avatar_url: 'https://cdn-icons-png.flaticon.com/512/9373/9373977.png',
+        content: '@everyone 🚨 แจ้งเตือนความปลอดภัย: มีคนพยายามปลดล็อกเว็บ!',
+        embeds: [
+          {
+            author: {
+              name: '˚ʚ 🚨 Intruder Alert • ใครแอบปลดล็อค ɞ˚',
+              icon_url: 'https://cdn-icons-png.flaticon.com/512/564/564619.png'
+            },
+            title: '🔒 ‧₊˚ มีคนพยายามปลดล็อกเว็บความทรงจำ! ˚₊‧',
+            description: `> ⚠️ **สถานะ:** ใส่รหัส PIN ไม่ถูกต้อง!\n> 🥺 *มีคนแอบกด หรือแฟนจำรหัสวันสำคัญไม่ได้น้าาา? ( > ⤙ < )*\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+            color: 0xFF3366, // Cute Berry Pink-Red
+            fields: [
+              {
+                name: '🔢 **รหัสที่แอบกด**',
+                value: `> 🔒 ||\` ${failedPin || 'ไม่ระบุ'} \`|| *(กดเพื่อดู)*`,
+                inline: true
+              },
+              {
+                name: '⚠️ **แอบกดผิดรอบที่**',
+                value: `> 💢 **รอบที่ ${wrongPinAttempts}**`,
+                inline: true
+              },
+              {
+                name: '⏰ **เวลาที่ตรวจพบ**',
+                value: `> ⏱️ \`${timeString}\``,
+                inline: true
+              },
+              {
+                name: '📱 **อุปกรณ์ที่ตรวจพบ**',
+                value: `> ${device}`,
+                inline: false
+              }
+            ],
+            footer: {
+              text: '🔍 Love Security Radar • จับตาดูอยู่นะคะ ( •̀ - •́ )',
+              icon_url: 'https://cdn-icons-png.flaticon.com/512/1022/1022382.png'
+            },
+            timestamp: now.toISOString()
+          }
+        ]
       };
 
-      await fetch('/api/line-alert', {
+      // Direct Discord Webhook Send
+      await fetch(DISCORD_WRONG_PIN_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(discordPayload)
       });
     } catch (e) {
-      console.warn('LINE Security Alert send error:', e);
+      console.warn('Discord Security Alert send error:', e);
     }
   }
 
-  async function sendPhotoUploadLineAlert(photoData) {
+  async function sendPhotoUploadDiscordAlert(photoData) {
     try {
       const now = new Date();
       const timeString = now.toLocaleString('th-TH', {
@@ -314,28 +365,80 @@ document.addEventListener('DOMContentLoaded', () => {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        minute: '2-digit'
       });
+      const device = getDeviceInfo();
 
-      const payload = {
-        type: 'photo_upload',
-        title: photoData.title,
-        date: photoData.date,
-        category: photoData.category,
-        caption: photoData.caption,
-        imageUrl: photoData.imageSrc,
-        timestamp: timeString,
-        userAgent: navigator.userAgent
+      const categoryMap = {
+        'Cute': 'ช่วงเวลาน่ารัก 🐱',
+        'First Date': 'เดตแรก ☕',
+        'Trips': 'ทริปเที่ยว ✈️',
+        'Anniversary': 'วันครบรอบ 🎉'
+      };
+      const catLabel = categoryMap[photoData.category] || photoData.category || 'ความทรงจำ 💕';
+
+      let formattedDate = photoData.date || 'ไม่ระบุวันที่';
+      if (photoData.date && photoData.date.includes('-')) {
+        const [y, m, d] = photoData.date.split('-');
+        formattedDate = `${d}/${m}/${y}`;
+      }
+
+      const captionText = photoData.caption 
+        ? photoData.caption 
+        : 'บันทึกความทรงจำและช่วงเวลาสุดพิเศษของเราสองคน 💕';
+
+      const embed = {
+        author: {
+          name: '˚ʚ 💖 NEW MEMORY UNLOCKED ɞ˚',
+          icon_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png'
+        },
+        title: `📸 ‧₊˚ 「 ${photoData.title || 'ความทรงจำของเรา'} 」 ˚₊‧ 💕`,
+        description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${captionText}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+        color: 0xFF6584, // Aesthetic Romantic Sweet Pink
+        fields: [
+          {
+            name: '🏷️ **หมวดหมู่**',
+            value: `> 🌸 **${catLabel}**`,
+            inline: true
+          },
+          {
+            name: '📅 **วันที่ความทรงจำ**',
+            value: `> 🗓️ **${formattedDate}**`,
+            inline: true
+          },
+          {
+            name: '⏰ **เวลาที่บันทึก**',
+            value: `> ⏱️ \`${timeString} น.\``,
+            inline: true
+          },
+          {
+            name: '📱 **อุปกรณ์ที่อัปโหลด**',
+            value: `> ${device}`,
+            inline: false
+          }
+        ],
+        footer: {
+          text: '🐾 Freshmaiyuu Love Album • บันทึกทุกรอยยิ้มของเราสองคน ( ˘͈ ᵕ ˘͈♡)',
+          icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+        },
+        timestamp: now.toISOString()
       };
 
-      await fetch('/api/line-alert', {
+      const discordPayload = {
+        username: '₊˚ 🎀 FRESHMAIYUU MEMORIES 🎀 ˚₊',
+        avatar_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png',
+        content: '@everyone 💕 มีการบันทึกความทรงจำใหม่ในเว็บแล้วน้าาา!',
+        embeds: [embed]
+      };
+
+      // Direct Discord Webhook Send
+      await fetch(DISCORD_PHOTO_UPLOAD_WEBHOOK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(discordPayload)
       });
     } catch (e) {
-      console.warn('LINE Photo Upload Alert send error:', e);
+      console.warn('Discord Photo Upload Alert send error:', e);
     }
   }
 
@@ -356,9 +459,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('ปลดล็อกสำเร็จแล้ว ยินดีต้อนรับนะคะ 💕', 'success');
       }, 350);
     } else {
-      // ERROR: Shake & Feedback + Send LINE Alert Notification
+      // ERROR: Shake & Feedback + Send Discord Alert Notification
       const failedPinAttempt = enteredPin;
-      sendWrongPinLineAlert(failedPinAttempt);
+      sendWrongPinDiscordAlert(failedPinAttempt);
 
       pinDots.forEach(dot => dot.classList.add('error'));
       const lockCard = document.querySelector('.lock-card');
@@ -908,8 +1011,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save to Local & Supabase Cloud
     await savePhotos();
 
-    // Trigger LINE Photo Notification (in background)
-    sendPhotoUploadLineAlert(newPhoto);
+    // Trigger Discord Photo Notification (in background)
+    sendPhotoUploadDiscordAlert(newPhoto);
   });
 
   function resetUploadForm() {
