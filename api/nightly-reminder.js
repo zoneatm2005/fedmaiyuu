@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   try {
     const DISCORD_WEBHOOK_URL =
       process.env.DISCORD_NIGHTLY_REMINDER_WEBHOOK ||
-      'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
+      'https://discord.com/api/webhooks/1542484193450266624/0fTU_B7wXPTLfn73NClnoDVTfZPAGa6jZY--u8pRsyAjaq271hh-DYA155swC1nqTwJL';
 
     const targetUserId = process.env.DISCORD_TARGET_USER_ID || '1198602938109657199';
     const mentionText = targetUserId.startsWith('<@') ? targetUserId : `<@${targetUserId}>`;
