@@ -28,41 +28,32 @@ export default async function handler(req, res) {
       process.env.DISCORD_NIGHTLY_REMINDER_WEBHOOK ||
       'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
 
-    // Target user to mention: muchkins028 (1198602938109657199)
     const targetUserId = process.env.DISCORD_TARGET_USER_ID || '1198602938109657199';
     const mentionText = targetUserId.startsWith('<@') ? targetUserId : `<@${targetUserId}>`;
-
-    const reminderMessage = 'ดึกแล้วอย่าลืมล็อคห้องนะคะที่รัก';
     const currentTime = new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
     const isoTimestamp = new Date().toISOString();
 
     const embed = {
       author: {
-        name: '˚ʚ 🌙 Good Night & Safety Reminder ɞ˚',
+        name: '˚ʚ Safety Reminder ɞ˚',
         icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
       },
       title: '🚪🔒 ‧₊˚ เตือนความจำก่อนเข้านอน ˚₊‧ 💕',
-      description: `> 💌 **ข้อความจากคนที่เป็นห่วง:**\n> ❝ **${reminderMessage}** ❞ 🗝️✨\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-      color: 0x9B59B6, // Sweet Romantic Lavender-Purple
+      color: 10180790, // 0x9B59B6
       fields: [
         {
-          name: '⏰ **เวลาแจ้งเตือน**',
-          value: `> ⏱️ \`21:00 น.\` *(ประจำวัน)*`,
-          inline: true
-        },
-        {
           name: '🛡️ **สิ่งที่ต้องเช็ค**',
-          value: `> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คหน้าต่าง\n> 🔌 ถอดปลั๊กที่ไม่ได้ใช้`,
+          value: '> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คหน้าต่าง\n> 🔌 ถอดปลั๊กไฟ',
           inline: true
         },
         {
           name: '💖 **ความห่วงใย**',
-          value: `> พักผ่อนเยอะๆ ดื่มน้ำ แล้วอย่านอนดึกเกินไปนะคนดี ฝันดีนะคะ 🌙💤`,
+          value: '> อย่าลืมนะคะที่รัก 🌙💤',
           inline: false
         }
       ],
       footer: {
-        text: '🐾 Freshmaiyuu • เป็นห่วงและคิดถึงเสมอนะคะ ( ˘͈ ᵕ ˘͈♡)',
+        text: '🐾 เป็นห่วงและคิดถึงเสมอนะคะ ( ˘͈ ᵕ ˘͈♡)',
         icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
       },
       timestamp: isoTimestamp
@@ -71,7 +62,7 @@ export default async function handler(req, res) {
     const discordPayload = {
       username: '₊˚ 🌙 แจ้งเตือน 3 ทุ่ม 🌙 ˚₊',
       avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-      content: `🌙 ${mentionText} ${reminderMessage} 🔒💕`,
+      content: mentionText,
       embeds: [embed]
     };
 
