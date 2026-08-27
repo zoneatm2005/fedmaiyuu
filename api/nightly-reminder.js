@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         }
       ],
       footer: {
-        text: '🐾 เป็นห่วงและคิดถึงเสมอนะคะ ( ˘͈ ᵕ ˘͈♡)',
+        text: ' <@604625807687680020> เป็นห่วงและคิดถึงเสมอนะคะ ( ˘͈ ᵕ ˘͈♡)',
         icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
       },
       timestamp: isoTimestamp
