@@ -58,6 +58,13 @@ export default async function handler(req, res) {
     const todayStr = `${currentYear}-${pad(currentMonth)}-${pad(currentDay)}`;
     const monthDayStr = `${pad(currentMonth)}-${pad(currentDay)}`;
 
+    const THAI_MONTHS = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+    const monthNameTh = THAI_MONTHS[currentMonth - 1] || '';
+    const yearBE = currentYear + 543;
+
     const currentTimeTh = new Date().toLocaleString('th-TH', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
@@ -73,6 +80,7 @@ export default async function handler(req, res) {
     const testMode = url.searchParams.get('test') || (req.body && req.body.test);
     const forceSend = url.searchParams.get('force') === 'true' || (req.body && req.body.force === true);
     const customGreeting = req.body && req.body.greeting;
+    const requestedDateStr = url.searchParams.get('date') || (req.body && req.body.dateStr) || todayStr;
 
     // Love calculation from start date: 2026-08-02
     const startDate = new Date('2026-08-02T00:00:00+07:00');
@@ -85,14 +93,6 @@ export default async function handler(req, res) {
     } else {
       daysTogetherText = `เริ่มต้นความรัก 2 ส.ค. 2026 💕`;
     }
-
-    // Default Greetings Map
-    const DEFAULT_GREETINGS = {
-      'birthday-moo': 'สุขสันต์วันเกิดนะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨',
-      'birthday-auan': 'สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨',
-      'anniversary-monthly': 'สุขสันต์วันครบรอบนะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)',
-      'anniversary-yearly': '🎉 วันนี้วันครบรอบใหญ่ประจำปีของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)'
-    };
 
     // Determine Event Type
     let eventType = null;
@@ -133,56 +133,99 @@ export default async function handler(req, res) {
       eventType = 'anniversary-monthly';
     }
 
+    // Fetch custom greetings from Supabase Cloud to get the specific greeting saved for this exact date/month/year
+    let customGreetingsFromCloud = {};
+    try {
+      const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vqawcettdkjbhmxevyuk.supabase.co';
+      const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_FKlGbWAjQ5o-FoJT029OHQ_Gi2GC_D3';
+      const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/love_data?id=eq.shared_app_data&select=data`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        }
+      });
+      if (sbRes.ok) {
+        const sbData = await sbRes.json();
+        if (Array.isArray(sbData) && sbData.length > 0 && sbData[0].data && sbData[0].data.customGreetings) {
+          customGreetingsFromCloud = sbData[0].data.customGreetings;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch custom greetings from Supabase:', e);
+    }
+
+    // Default Dynamic Greetings tailored for this specific month & year
+    const DYNAMIC_DEFAULT_GREETINGS = {
+      'birthday-moo': `สุขสันต์วันเกิดปี ${yearBE} นะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨`,
+      'birthday-auan': `สุขสันต์วันเกิดปี ${yearBE} นะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨`,
+      'anniversary-monthly': `สุขสันต์วันครบรอบประจำเดือน${monthNameTh} ${yearBE} นะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)`,
+      'anniversary-yearly': `🎉 วันนี้วันครบรอบใหญ่ประจำปี ${yearBE} ของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)`
+    };
+
+    // Priority for Greeting text:
+    // 1. Direct custom greeting passed in request
+    // 2. Custom greeting saved for this exact date (e.g. "2026-09-02") in Supabase
+    // 3. Custom greeting saved for requested date
+    // 4. Custom greeting template
+    // 5. Dynamic default greeting of that specific month & year
+    let finalGreeting = customGreeting;
+    if (!finalGreeting && customGreetingsFromCloud[requestedDateStr] && customGreetingsFromCloud[requestedDateStr].trim()) {
+      finalGreeting = customGreetingsFromCloud[requestedDateStr].trim();
+    }
+    if (!finalGreeting && customGreetingsFromCloud[todayStr] && customGreetingsFromCloud[todayStr].trim()) {
+      finalGreeting = customGreetingsFromCloud[todayStr].trim();
+    }
+    if (!finalGreeting && customGreetingsFromCloud[eventType] && customGreetingsFromCloud[eventType].trim()) {
+      finalGreeting = customGreetingsFromCloud[eventType].trim();
+    }
+    if (!finalGreeting) {
+      finalGreeting = DYNAMIC_DEFAULT_GREETINGS[eventType] || '';
+    }
+
     // Build Specific Event Embeds
     let embed = {};
 
     if (eventType === 'birthday-moo') {
-      const greeting = customGreeting || DEFAULT_GREETINGS['birthday-moo'];
       embed = {
         author: {
-          name: '˚ʚ 🎂 HAPPY BIRTHDAY TO MOO ɞ˚',
+          name: `˚ʚ 🎂 HAPPY BIRTHDAY TO MOOFAD (${yearBE}) ɞ˚`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/3159/3159066.png'
         },
-        title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะหมูที่รัก! 🐷🎂 ˚₊‧ 💕',
-        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+        title: `🎉 ‧₊˚ สุขสันต์วันเกิดนะคะที่รัก (ปี ${yearBE}) 🐷🎂 ˚₊‧ 💕`,
+        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
         color: 0xFF758C, // Pastel Peachy Pink
         fields: [
           {
             name: '👑 **เจ้าของวันเกิดวันนี้**',
-            value: '> 🐷 **หมู (Moo)** 💖',
+            value: '> 🐷 **หมูเฟรช** 💖',
             inline: true
           },
           {
             name: '📅 **วันที่พิเศษ**',
-            value: '> 🗓️ **28 เมษายน**',
+            value: `> 🗓️ **28 เมษายน ${yearBE}**`,
             inline: true
           },
           {
             name: '⏰ **เวลาที่แจ้งเตือน**',
             value: `> ⏱️ \`${currentTimeTh}\``,
             inline: false
-          },
-          {
-            name: '✨ **ความในใจจากแฟน**',
-            value: `> ขอให้หมูมีรอยยิ้มที่สดใสในทุกๆ วัน เป็นที่รักและมีความสุขที่สุดในโลกนะ! 🎂✨`,
-            inline: false
           }
+
         ],
         footer: {
-          text: '🐾 Freshmaiyuu Birthday Celebration • รักหมูที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)',
+          text: `🐾 Freshmaiyuu Birthday Celebration • รักหมูที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
         },
         timestamp: isoTimestamp
       };
     } else if (eventType === 'birthday-auan') {
-      const greeting = customGreeting || DEFAULT_GREETINGS['birthday-auan'];
       embed = {
         author: {
-          name: '˚ʚ 🎂 HAPPY BIRTHDAY TO AUAN ɞ˚',
+          name: `˚ʚ 🎂 HAPPY BIRTHDAY TO AUAN (${yearBE}) ɞ˚`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/3069/3069172.png'
         },
-        title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻🎂 ˚₊‧ 💕',
-        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+        title: `🎉 ‧₊˚ สุขสันต์วันเกิดนะอ้วนที่รัก! (ปี ${yearBE}) 🐻🎂 ˚₊‧ 💕`,
+        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
         color: 0xFFA726, // Warm Honey Amber / Gold
         fields: [
           {
@@ -192,7 +235,7 @@ export default async function handler(req, res) {
           },
           {
             name: '📅 **วันที่พิเศษ**',
-            value: '> 🗓️ **6 พฤษภาคม**',
+            value: `> 🗓️ **6 พฤษภาคม ${yearBE}**`,
             inline: true
           },
           {
@@ -207,25 +250,24 @@ export default async function handler(req, res) {
           }
         ],
         footer: {
-          text: '🐾 Freshmaiyuu Birthday Celebration • รักอ้วนที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)',
+          text: `🐾 Freshmaiyuu Birthday Celebration • รักอ้วนที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
         },
         timestamp: isoTimestamp
       };
     } else if (eventType === 'anniversary-yearly') {
-      const greeting = customGreeting || DEFAULT_GREETINGS['anniversary-yearly'];
       embed = {
         author: {
-          name: '˚ʚ 💍 ANNUAL ANNIVERSARY CELEBRATION ɞ˚',
+          name: `˚ʚ 💍 ANNUAL ANNIVERSARY CELEBRATION (${yearBE}) ɞ˚`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png'
         },
-        title: '🎉 ‧₊˚ สุขสันต์วันครบรอบใหญ่ประจำปีของเรา! 💍🥂 ˚₊‧ 💕',
-        description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+        title: `🎉 ‧₊˚ สุขสันต์วันครบรอบใหญ่ประจำปี ${yearBE} ของเรา! 💍🥂 ˚₊‧ 💕`,
+        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
         color: 0xFF2D55, // Deep Radiant Rose Red/Pink
         fields: [
           {
             name: '💖 **วันครบรอบใหญ่**',
-            value: '> 🥂 **2 สิงหาคม (02/08)**',
+            value: `> 🥂 **2 สิงหาคม ${yearBE}**`,
             inline: true
           },
           {
@@ -245,26 +287,25 @@ export default async function handler(req, res) {
           }
         ],
         footer: {
-          text: '🐾 Freshmaiyuu Annual Anniversary • ขอบคุณที่อยู่ข้างกันเสมอนะคะ 💕',
+          text: `🐾 Freshmaiyuu Annual Anniversary • ขอบคุณที่อยู่ข้างกันเสมอนะคะ 💕`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
         },
         timestamp: isoTimestamp
       };
     } else {
       // Monthly Anniversary (Every 2nd of the month)
-      const greeting = customGreeting || DEFAULT_GREETINGS['anniversary-monthly'];
       embed = {
         author: {
-          name: '˚ʚ 💕 MONTHLY ANNIVERSARY REMINDER ɞ˚',
+          name: `˚ʚ 💕 MONTHLY ANNIVERSARY (${monthNameTh} ${yearBE}) ɞ˚`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
         },
-        title: '💖 ‧₊˚ สุขสันต์วันครบรอบประจำเดือน! (วันที่ 2) ˚₊‧ 💕',
-        description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+        title: `💖 ‧₊˚ สุขสันต์วันครบรอบประจำเดือน${monthNameTh}! (วันที่ 2) ˚₊‧ 💕`,
+        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
         color: 0xFF6584, // Cute Sweet Pink
         fields: [
           {
             name: '🗓️ **วันครบรอบรอบนี้**',
-            value: `> 🌸 **วันที่ 2 ${new Date().toLocaleString('th-TH', { month: 'long', timeZone: 'Asia/Bangkok' })}**`,
+            value: `> 🌸 **วันที่ 2 ${monthNameTh} ${yearBE}**`,
             inline: true
           },
           {
@@ -279,7 +320,7 @@ export default async function handler(req, res) {
           }
         ],
         footer: {
-          text: '🐾 Freshmaiyuu • สุขสันต์วันครบรอบวันที่ 2 ของทุกเดือนนะคะ ( ˘͈ ᵕ ˘͈♡)',
+          text: `🐾 Freshmaiyuu • สุขสันต์วันครบรอบประจำเดือน${monthNameTh} ${yearBE} ( ˘͈ ᵕ ˘͈♡)`,
           icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
         },
         timestamp: isoTimestamp
@@ -312,6 +353,7 @@ export default async function handler(req, res) {
       success: true,
       isSpecialDay: true,
       eventType: eventType,
+      greeting: finalGreeting,
       message: `ส่งแจ้งเตือน ${embed.title} เข้า Discord สำเร็จเรียบร้อยแล้ว! 💕`,
       today: todayStr,
       timestamp: currentTimeTh

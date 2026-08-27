@@ -209,17 +209,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch (e) { }
 
+  const THAI_MONTHS_NAMES = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+
   /**
    * Retrieves greeting for a specific date (dateStr: YYYY-MM-DD)
-   * Falls back to general template key or default message if not yet set for this specific date.
+   * Prioritizes the exact custom greeting saved for this specific date/month/year.
    */
   function getGreetingForDate(dateStr, templateKey) {
-    if (customGreetings && typeof customGreetings[dateStr] === 'string') {
-      return customGreetings[dateStr];
+    if (customGreetings && typeof customGreetings[dateStr] === 'string' && customGreetings[dateStr].trim() !== '') {
+      return customGreetings[dateStr].trim();
     }
-    if (customGreetings && typeof customGreetings[templateKey] === 'string') {
-      return customGreetings[templateKey];
+    if (customGreetings && typeof customGreetings[templateKey] === 'string' && customGreetings[templateKey].trim() !== '') {
+      return customGreetings[templateKey].trim();
     }
+
+    if (dateStr && dateStr.includes('-')) {
+      const parts = dateStr.split('-');
+      const yCE = parseInt(parts[0], 10);
+      const mIdx = parseInt(parts[1], 10) - 1;
+      const yBE = yCE + 543;
+      const monthName = THAI_MONTHS_NAMES[mIdx] || '';
+
+      if (templateKey === 'birthday-moo') {
+        return `สุขสันต์วันเกิดปี ${yBE} นะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨`;
+      }
+      if (templateKey === 'birthday-auan') {
+        return `สุขสันต์วันเกิดปี ${yBE} นะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨`;
+      }
+      if (templateKey === 'anniversary-yearly') {
+        return `🎉 วันนี้วันครบรอบใหญ่ประจำปี ${yBE} ของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)`;
+      }
+      if (templateKey === 'anniversary-monthly') {
+        return `สุขสันต์วันครบรอบประจำเดือน${monthName} ${yBE} นะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)`;
+      }
+    }
+
     return DEFAULT_GREETINGS[templateKey] || '';
   }
 
@@ -550,12 +577,30 @@ document.addEventListener('DOMContentLoaded', () => {
         minute: '2-digit'
       });
 
+      // Target Date Info (Supports specific dates e.g. '2026-09-02')
+      let targetMonthName = now.toLocaleString('th-TH', { month: 'long', timeZone: 'Asia/Bangkok' });
+      let targetYearBE = now.getFullYear() + 543;
+      let targetDateFormatted = `วันที่ 2 ${targetMonthName} ${targetYearBE}`;
+
+      if (dateStr && dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        const yCE = parseInt(parts[0], 10);
+        const mIdx = parseInt(parts[1], 10) - 1;
+        const dNum = parseInt(parts[2], 10);
+        targetYearBE = yCE + 543;
+        targetMonthName = THAI_MONTHS_NAMES[mIdx] || '';
+        targetDateFormatted = `วันที่ ${dNum} ${targetMonthName} ${targetYearBE}`;
+      }
+
       // Calculate days together from 2026-08-02
       const startDate = new Date((config.anniversaryDate || '2026-08-02') + 'T00:00:00+07:00');
       const nowBkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
       const diffMs = nowBkk - startDate;
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       let daysTogetherText = diffDays >= 0 ? `คบกันมาแล้ว ${diffDays + 1} วัน 💕` : `เริ่มต้นความรัก 2 ส.ค. 2026 💕`;
+
+      // Get exact greeting for this specific date/month/year
+      const finalGreeting = greeting || getGreetingForDate(dateStr, eventType);
 
       const targetUserId1 = '1198602938109657199';
       const targetUserId2 = '604625807687680020';
@@ -568,16 +613,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if (eventType === 'birthday-moo') {
         embed = {
           author: {
-            name: '˚ʚ 🎂 HAPPY BIRTHDAY TO MOO ɞ˚',
+            name: `˚ʚ 🎂 HAPPY BIRTHDAY TO MOO (${targetYearBE}) ɞ˚`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/3159/3159066.png'
           },
-          title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะหมูที่รัก! 🐷🎂 ˚₊‧ 💕',
-          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting || 'สุขสันต์วันเกิดนะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          title: `🎉 ‧₊˚ สุขสันต์วันเกิดนะหมูที่รัก! (ปี ${targetYearBE}) 🐷🎂 ˚₊‧ 💕`,
+          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
           color: 0xFF758C,
           fields: [
             { name: '👑 **เจ้าของวันเกิดวันนี้**', value: '> 🐷 **หมู (Moo)** 💖', inline: true },
-            { name: '📅 **วันที่พิเศษ**', value: '> 🗓️ **28 เมษายน**', inline: true },
-            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '📅 **วันที่พิเศษ**', value: `> 🗓️ **28 เมษายน ${targetYearBE}**`, inline: true },
+            { name: '⏰ **เวลาที่ส่งการ์ด**', value: `> ⏱️ \`${timeString}\``, inline: false },
             { name: '✨ **ความในใจจากแฟน**', value: '> ขอให้หมูมีรอยยิ้มที่สดใสในทุกๆ วัน เป็นที่รักและมีความสุขที่สุดในโลกนะ! 🎂✨', inline: false }
           ],
           footer: {
@@ -589,16 +634,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (eventType === 'birthday-auan') {
         embed = {
           author: {
-            name: '˚ʚ 🎂 HAPPY BIRTHDAY TO AUAN ɞ˚',
+            name: `˚ʚ 🎂 HAPPY BIRTHDAY TO AUAN (${targetYearBE}) ɞ˚`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/3069/3069172.png'
           },
-          title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻🎂 ˚₊‧ 💕',
-          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting || 'สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          title: `🎉 ‧₊˚ สุขสันต์วันเกิดนะอ้วนที่รัก! (ปี ${targetYearBE}) 🐻🎂 ˚₊‧ 💕`,
+          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
           color: 0xFFA726,
           fields: [
             { name: '👑 **เจ้าของวันเกิดวันนี้**', value: '> 🐻 **อ้วน (Auan)** 💖', inline: true },
-            { name: '📅 **วันที่พิเศษ**', value: '> 🗓️ **6 พฤษภาคม**', inline: true },
-            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '📅 **วันที่พิเศษ**', value: `> 🗓️ **6 พฤษภาคม ${targetYearBE}**`, inline: true },
+            { name: '⏰ **เวลาที่ส่งการ์ด**', value: `> ⏱️ \`${timeString}\``, inline: false },
             { name: '✨ **ความในใจจากแฟน**', value: '> ขอให้อ้วนมีความสุขมากๆ คิดสิ่งใดสมหวัง สุขภาพแข็งแรง รวยๆ เฮงๆ น้าาา! 🎂✨', inline: false }
           ],
           footer: {
@@ -610,16 +655,16 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (eventType === 'anniversary-yearly') {
         embed = {
           author: {
-            name: '˚ʚ 💍 ANNUAL ANNIVERSARY CELEBRATION ɞ˚',
+            name: `˚ʚ 💍 ANNUAL ANNIVERSARY CELEBRATION (${targetYearBE}) ɞ˚`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png'
           },
-          title: '🎉 ‧₊˚ สุขสันต์วันครบรอบใหญ่ประจำปีของเรา! 💍🥂 ˚₊‧ 💕',
-          description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting || '🎉 วันนี้วันครบรอบใหญ่ประจำปีของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          title: `🎉 ‧₊˚ สุขสันต์วันครบรอบใหญ่ประจำปี ${targetYearBE} ของเรา! 💍🥂 ˚₊‧ 💕`,
+          description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
           color: 0xFF2D55,
           fields: [
-            { name: '💖 **วันครบรอบใหญ่**', value: '> 🥂 **2 สิงหาคม (02/08)**', inline: true },
+            { name: '💖 **วันครบรอบใหญ่**', value: `> 🥂 **2 สิงหาคม ${targetYearBE}**`, inline: true },
             { name: '⏳ **สถานะความรัก**', value: `> 🌸 **${daysTogetherText}**`, inline: true },
-            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '⏰ **เวลาที่ส่งการ์ด**', value: `> ⏱️ \`${timeString}\``, inline: false },
             { name: '💌 **ข้อความจากหัวใจ**', value: '> ขอบคุณทุกการเดินทางและทุกรอยยิ้มที่มอบให้กัน จะรักและดูแลเธอแบบนี้ตลอดไปนะคะ 💖', inline: false }
           ],
           footer: {
@@ -632,19 +677,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Monthly Anniversary (Day 2)
         embed = {
           author: {
-            name: '˚ʚ 💕 MONTHLY ANNIVERSARY REMINDER ɞ˚',
+            name: `˚ʚ 💕 MONTHLY ANNIVERSARY (${targetMonthName} ${targetYearBE}) ɞ˚`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
           },
-          title: '💖 ‧₊˚ สุขสันต์วันครบรอบประจำเดือน! (วันที่ 2) ˚₊‧ 💕',
-          description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting || 'สุขสันต์วันครบรอบนะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          title: `💖 ‧₊˚ สุขสันต์วันครบรอบประจำเดือน${targetMonthName}! (วันที่ 2) ˚₊‧ 💕`,
+          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${finalGreeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
           color: 0xFF6584,
           fields: [
-            { name: '🗓️ **วันครบรอบรอบนี้**', value: `> 🌸 **วันที่ 2 ${now.toLocaleString('th-TH', { month: 'long', timeZone: 'Asia/Bangkok' })}**`, inline: true },
+            { name: '🗓️ **วันครบรอบรอบนี้**', value: `> 🌸 **${targetDateFormatted}**`, inline: true },
             { name: '⏳ **เส้นทางความรัก**', value: `> 🐾 **${daysTogetherText}**`, inline: true },
-            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false }
+            { name: '⏰ **เวลาที่ส่งการ์ด**', value: `> ⏱️ \`${timeString}\``, inline: false }
           ],
           footer: {
-            text: '🐾 Freshmaiyuu • สุขสันต์วันครบรอบวันที่ 2 ของทุกเดือนนะคะ ( ˘͈ ᵕ ˘͈♡)',
+            text: `🐾 Freshmaiyuu • สุขสันต์วันครบรอบประจำเดือน${targetMonthName} ${targetYearBE} ( ˘͈ ᵕ ˘͈♡)`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
           },
           timestamp: now.toISOString()
