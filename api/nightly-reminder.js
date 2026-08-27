@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       fields: [
         {
           name: '🛡️ **สิ่งที่ต้องเช็ค**',
-          value: '> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คระเบียง',
+          value: '> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คหน้าต่าง\n> 🔌 ถอดปลั๊กไฟ',
           inline: true
         },
         {
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         }
       ],
       footer: {
-        text: '🐾 <@604625807687680020> เป็นห่วงและคิดถึงเสมอนะคะที่รัก 🌙💤',
+        text: '🐾 Freshmaiyuu • Good Night 🌙💤',
         icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
       },
       timestamp: isoTimestamp
