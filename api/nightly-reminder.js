@@ -43,17 +43,17 @@ export default async function handler(req, res) {
       fields: [
         {
           name: '🛡️ **สิ่งที่ต้องเช็ค**',
-          value: '> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คระเบียง',
+          value: '> 🚪 ล็อคประตูด้านใน\n> 🪟 เช็คประตูระเบียง',
           inline: true
         },
         {
           name: '💖 **ความห่วงใย**',
-          value: '> อย่าลืมนะคะที่รัก 🌙💤',
+          value: '> อย่าลืมนะคะที่รัก 🌙💤\n> จาก <@604625807687680020> เป็นห่วงและคิดถึงเสมอนะคะ ( ˘͈ ᵕ ˘͈♡)',
           inline: false
         }
       ],
       footer: {
-        text: '🐾 <@604625807687680020> เป็นห่วงและคิดถึงเสมอนะคะที่รัก 🌙💤',
+        text: '🐾 Freshmaiyuu • Good Night 🌙💤',
         icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
       },
       timestamp: isoTimestamp
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
     const discordPayload = {
       username: '₊˚ 🌙 แจ้งเตือน 3 ทุ่ม 🌙 ˚₊',
       avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-      content: `${mentionText} <@604625807687680020>`,
+      content: mentionText,
       embeds: [embed]
     };
 
