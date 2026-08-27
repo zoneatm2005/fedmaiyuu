@@ -575,6 +575,33 @@ select:focus {
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
+.btn-send-discord-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+  color: white;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  padding: 8px 18px;
+  border-radius: 50px;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(88, 101, 242, 0.4);
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-send-discord-banner:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(88, 101, 242, 0.55);
+  background: linear-gradient(135deg, #4752C4 0%, #3b44a9 100%);
+}
+
+.btn-send-discord-banner:active {
+  transform: scale(0.98);
+}
+
 /* Special Annual Dates & Birthdays Countdown Section */
 .special-dates-section {
   background: var(--card-bg);
@@ -1918,6 +1945,20 @@ select:focus {
 
 .btn-hero-action.reset:hover {
   color: #d84315;
+}
+
+.btn-hero-action.discord {
+  background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(88, 101, 242, 0.3);
+  font-size: 0.85rem;
+  padding: 6px 14px;
+}
+
+.btn-hero-action.discord:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(88, 101, 242, 0.45);
+  background: linear-gradient(135deg, #4752C4 0%, #3b44a9 100%);
 }
 
 .cal-modal-header {

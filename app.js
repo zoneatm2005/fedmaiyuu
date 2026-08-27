@@ -368,6 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- DISCORD NOTIFICATION HELPERS ---
   const DISCORD_WRONG_PIN_WEBHOOK = 'https://discord.com/api/webhooks/1542139526372270150/s3HQJiI_Zn3xYUi_IznNh23tzl9lWZhKHt9WjW_JSTVYfcmBZdO3r9KKKP9LO7vYanlA';
   const DISCORD_PHOTO_UPLOAD_WEBHOOK = 'https://discord.com/api/webhooks/1542140418924216345/86zGkPkSxNHnlU1UJ0KDhNPzQ51On1zMj2uaRRKRdfhj0jyM9MoIdolz6IlhigzJww8v';
+  const DISCORD_SPECIAL_DAY_WEBHOOK = 'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
 
   function getDeviceInfo() {
     const ua = navigator.userAgent;
@@ -534,6 +535,138 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } catch (e) {
       console.warn('Discord Photo Upload Alert send error:', e);
+    }
+  }
+
+  async function sendSpecialDayDiscordAlert({ eventType, title, greeting, dateStr, isManual = false }) {
+    try {
+      const now = new Date();
+      const timeString = now.toLocaleString('th-TH', {
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      // Calculate days together from 2026-08-02
+      const startDate = new Date((config.anniversaryDate || '2026-08-02') + 'T00:00:00+07:00');
+      const nowBkk = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+      const diffMs = nowBkk - startDate;
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      let daysTogetherText = diffDays >= 0 ? `คบกันมาแล้ว ${diffDays + 1} วัน 💕` : `เริ่มต้นความรัก 2 ส.ค. 2026 💕`;
+
+      const targetUserId1 = '1198602938109657199';
+      const targetUserId2 = '604625807687680020';
+      const mention1 = `<@${targetUserId1}>`;
+      const mention2 = `<@${targetUserId2}>`;
+      const mentions = `${mention1} ${mention2}`;
+
+      let embed = {};
+
+      if (eventType === 'birthday-moo') {
+        embed = {
+          author: {
+            name: '˚ʚ 🎂 HAPPY BIRTHDAY TO MOO ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/3159/3159066.png'
+          },
+          title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะหมูที่รัก! 🐷🎂 ˚₊‧ 💕',
+          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting || 'สุขสันต์วันเกิดนะหมูที่รัก! 🐷💖 ขอให้มีความสุขมากๆ สุขภาพแข็งแรง น่ารักแบบนี้ตลอดไปนะคะ ✨'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFF758C,
+          fields: [
+            { name: '👑 **เจ้าของวันเกิดวันนี้**', value: '> 🐷 **หมู (Moo)** 💖', inline: true },
+            { name: '📅 **วันที่พิเศษ**', value: '> 🗓️ **28 เมษายน**', inline: true },
+            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '✨ **ความในใจจากแฟน**', value: '> ขอให้หมูมีรอยยิ้มที่สดใสในทุกๆ วัน เป็นที่รักและมีความสุขที่สุดในโลกนะ! 🎂✨', inline: false }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu Birthday Celebration • รักหมูที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: now.toISOString()
+        };
+      } else if (eventType === 'birthday-auan') {
+        embed = {
+          author: {
+            name: '˚ʚ 🎂 HAPPY BIRTHDAY TO AUAN ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/3069/3069172.png'
+          },
+          title: '🎉 ‧₊˚ สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻🎂 ˚₊‧ 💕',
+          description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting || 'สุขสันต์วันเกิดนะอ้วนที่รัก! 🐻💖 ขอให้มีความสุขมากๆ รวยๆ เฮงๆ ยิ้มเยอะๆ ในทุกๆ วันนะคะ ✨'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFFA726,
+          fields: [
+            { name: '👑 **เจ้าของวันเกิดวันนี้**', value: '> 🐻 **อ้วน (Auan)** 💖', inline: true },
+            { name: '📅 **วันที่พิเศษ**', value: '> 🗓️ **6 พฤษภาคม**', inline: true },
+            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '✨ **ความในใจจากแฟน**', value: '> ขอให้อ้วนมีความสุขมากๆ คิดสิ่งใดสมหวัง สุขภาพแข็งแรง รวยๆ เฮงๆ น้าาา! 🎂✨', inline: false }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu Birthday Celebration • รักอ้วนที่สุดในโลก ( ˘͈ ᵕ ˘͈♡)',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: now.toISOString()
+        };
+      } else if (eventType === 'anniversary-yearly') {
+        embed = {
+          author: {
+            name: '˚ʚ 💍 ANNUAL ANNIVERSARY CELEBRATION ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png'
+          },
+          title: '🎉 ‧₊˚ สุขสันต์วันครบรอบใหญ่ประจำปีของเรา! 💍🥂 ˚₊‧ 💕',
+          description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting || '🎉 วันนี้วันครบรอบใหญ่ประจำปีของเรา สุขสันต์วันครบรอบนะคะ ขอบคุณที่รักกันตลอดมานะ ( ˘͈ ᵕ ˘͈♡)'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFF2D55,
+          fields: [
+            { name: '💖 **วันครบรอบใหญ่**', value: '> 🥂 **2 สิงหาคม (02/08)**', inline: true },
+            { name: '⏳ **สถานะความรัก**', value: `> 🌸 **${daysTogetherText}**`, inline: true },
+            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false },
+            { name: '💌 **ข้อความจากหัวใจ**', value: '> ขอบคุณทุกการเดินทางและทุกรอยยิ้มที่มอบให้กัน จะรักและดูแลเธอแบบนี้ตลอดไปนะคะ 💖', inline: false }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu Annual Anniversary • ขอบคุณที่อยู่ข้างกันเสมอนะคะ 💕',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: now.toISOString()
+        };
+      } else {
+        // Monthly Anniversary (Day 2)
+        embed = {
+          author: {
+            name: '˚ʚ 💕 MONTHLY ANNIVERSARY REMINDER ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
+          },
+          title: '💖 ‧₊˚ สุขสันต์วันครบรอบประจำเดือน! (วันที่ 2) ˚₊‧ 💕',
+          description: `> 💌 **บันทึกความรู้สึก:**\n> ❝ *${greeting || 'สุขสันต์วันครบรอบนะที่รัก 💕 ขอบคุณที่อยู่เคียงข้างและสร้างความทรงจำดีๆ ร่วมกันเสมอมานะคะ ( ˘͈ ᵕ ˘͈♡)'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFF6584,
+          fields: [
+            { name: '🗓️ **วันครบรอบรอบนี้**', value: `> 🌸 **วันที่ 2 ${now.toLocaleString('th-TH', { month: 'long', timeZone: 'Asia/Bangkok' })}**`, inline: true },
+            { name: '⏳ **เส้นทางความรัก**', value: `> 🐾 **${daysTogetherText}**`, inline: true },
+            { name: '⏰ **เวลาที่แจ้งเตือน**', value: `> ⏱️ \`${timeString}\``, inline: false }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu • สุขสันต์วันครบรอบวันที่ 2 ของทุกเดือนนะคะ ( ˘͈ ᵕ ˘͈♡)',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: now.toISOString()
+        };
+      }
+
+      const discordPayload = {
+        username: '₊˚ 💖 Freshmaiyuu Special Day 💖 ˚₊',
+        avatar_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png',
+        content: `${mentions} 💕 **${isManual ? 'มีการกดส่งการ์ดแจ้งเตือนวันพิเศษจากในเว็บค่ะ! 💌' : 'วันสำคัญของเรามาถึงแล้วน้าาา! ✨'}**`,
+        embeds: [embed]
+      };
+
+      const resp = await fetch(DISCORD_SPECIAL_DAY_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(discordPayload)
+      });
+      return resp.ok;
+    } catch (e) {
+      console.warn('Discord Special Day Alert send error:', e);
+      return false;
     }
   }
 
@@ -853,7 +986,51 @@ document.addEventListener('DOMContentLoaded', () => {
           🎉 สุขสันต์วันเกิดนะ${matchedSpecial.person}! ${matchedSpecial.icon}🎂💖
         </div>
         ${greeting ? `<div class="today-bday-sub">${escapeHtml(greeting)}</div>` : ''}
+        <div class="today-bday-actions" style="margin-top: 10px; display: flex; justify-content: center; gap: 8px;">
+          <button type="button" class="btn-send-discord-banner" id="btn-banner-send-discord">
+            <i class="fa-brands fa-discord"></i> ส่งการ์ดแจ้งเตือนเข้า Discord 💌
+          </button>
+        </div>
       `;
+
+      const btnDiscord = todayBanner.querySelector('#btn-banner-send-discord');
+      if (btnDiscord) {
+        btnDiscord.addEventListener('click', async () => {
+          btnDiscord.disabled = true;
+          btnDiscord.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่งเข้า Discord...';
+          const ok = await sendSpecialDayDiscordAlert({
+            eventType: matchedSpecial.id,
+            title: `สุขสันต์วันเกิดนะ${matchedSpecial.person} ${matchedSpecial.icon}`,
+            greeting: greeting,
+            dateStr: todayStr,
+            isManual: true
+          });
+          if (ok) {
+            showToast('ส่งการ์ดวันเกิดเข้า Discord เรียบร้อยแล้วค่ะ 💕', 'success');
+            spawnHeartBurst(window.innerWidth / 2, 200, 35);
+          } else {
+            showToast('เกิดข้อผิดพลาดในการส่งเข้า Discord', 'error');
+          }
+          btnDiscord.disabled = false;
+          btnDiscord.innerHTML = '<i class="fa-brands fa-discord"></i> ส่งการ์ดแจ้งเตือนเข้า Discord 💌';
+        });
+      }
+
+      // Auto-send once per day on website open if not sent today
+      try {
+        const lastSent = localStorage.getItem('love_last_special_alert_sent');
+        if (lastSent !== todayStr) {
+          localStorage.setItem('love_last_special_alert_sent', todayStr);
+          sendSpecialDayDiscordAlert({
+            eventType: matchedSpecial.id,
+            title: `สุขสันต์วันเกิดนะ${matchedSpecial.person} ${matchedSpecial.icon}`,
+            greeting: greeting,
+            dateStr: todayStr,
+            isManual: false
+          });
+        }
+      } catch (e) { }
+
       setTimeout(() => {
         spawnHeartBurst(window.innerWidth / 2, 200, 35);
       }, 400);
@@ -865,10 +1042,54 @@ document.addEventListener('DOMContentLoaded', () => {
       todayBanner.style.display = 'block';
       todayBanner.innerHTML = `
         <div class="today-bday-heading">
-          💖 สุขสันต์วันครบรอบนะที่รัก! (วันที่ 2 ของทุกเดือน) 💕
+          ${isYearly ? '💍 สุขสันต์วันครบรอบใหญ่ประจำปีของเรา! 💕🥂' : '💖 สุขสันต์วันครบรอบนะที่รัก! (วันที่ 2 ของทุกเดือน) 💕'}
         </div>
         ${greeting ? `<div class="today-bday-sub">${escapeHtml(greeting)}</div>` : ''}
+        <div class="today-bday-actions" style="margin-top: 10px; display: flex; justify-content: center; gap: 8px;">
+          <button type="button" class="btn-send-discord-banner" id="btn-banner-send-discord">
+            <i class="fa-brands fa-discord"></i> ส่งการ์ดแจ้งเตือนเข้า Discord 💌
+          </button>
+        </div>
       `;
+
+      const btnDiscord = todayBanner.querySelector('#btn-banner-send-discord');
+      if (btnDiscord) {
+        btnDiscord.addEventListener('click', async () => {
+          btnDiscord.disabled = true;
+          btnDiscord.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่งเข้า Discord...';
+          const ok = await sendSpecialDayDiscordAlert({
+            eventType: templateKey,
+            title: isYearly ? 'สุขสันต์วันครบรอบใหญ่ประจำปี 💍' : 'สุขสันต์วันครบรอบประจำเดือน 💕',
+            greeting: greeting,
+            dateStr: todayStr,
+            isManual: true
+          });
+          if (ok) {
+            showToast('ส่งการ์ดวันครบรอบเข้า Discord เรียบร้อยแล้วค่ะ 💕', 'success');
+            spawnHeartBurst(window.innerWidth / 2, 200, 35);
+          } else {
+            showToast('เกิดข้อผิดพลาดในการส่งเข้า Discord', 'error');
+          }
+          btnDiscord.disabled = false;
+          btnDiscord.innerHTML = '<i class="fa-brands fa-discord"></i> ส่งการ์ดแจ้งเตือนเข้า Discord 💌';
+        });
+      }
+
+      // Auto-send once per day on website open if not sent today
+      try {
+        const lastSent = localStorage.getItem('love_last_special_alert_sent');
+        if (lastSent !== todayStr) {
+          localStorage.setItem('love_last_special_alert_sent', todayStr);
+          sendSpecialDayDiscordAlert({
+            eventType: templateKey,
+            title: isYearly ? 'สุขสันต์วันครบรอบใหญ่ประจำปี 💍' : 'สุขสันต์วันครบรอบประจำเดือน 💕',
+            greeting: greeting,
+            dateStr: todayStr,
+            isManual: false
+          });
+        }
+      } catch (e) { }
+
       setTimeout(() => {
         spawnHeartBurst(window.innerWidth / 2, 200, 35);
       }, 400);
@@ -1964,6 +2185,11 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="cal-birthday-hero-body">
           <div class="cal-birthday-hero-title" style="${isAnni ? 'color: #d81b60;' : ''}">${specialTitle}</div>
           <div class="cal-birthday-hero-desc" id="hero-greeting-view">${formattedGreetingHtml}</div>
+          <div class="hero-extra-actions" style="margin-top: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button type="button" id="btn-send-discord-modal" class="btn-hero-action discord" title="ส่งการ์ดแจ้งเตือนวันพิเศษนี้เข้า Discord">
+              <i class="fa-brands fa-discord"></i> ส่งการ์ดเข้า Discord 💌
+            </button>
+          </div>
           
           <div class="cal-birthday-hero-edit-mode" id="hero-greeting-edit" style="display: none; margin-top: 8px;">
             <textarea id="hero-greeting-input" class="hero-edit-textarea" rows="3" placeholder="เขียนคำอวยพรเฉพาะของรอบนี้... (สามารถเว้นว่างไว้ได้)"></textarea>
@@ -1988,6 +2214,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const modalHeader = calendarModal.querySelector('.cal-modal-header');
       if (modalHeader) {
         modalHeader.insertAdjacentElement('afterend', heroBox);
+      }
+
+      // Attach Discord Send Button Listener
+      const btnSendDiscord = heroBox.querySelector('#btn-send-discord-modal');
+      if (btnSendDiscord) {
+        btnSendDiscord.addEventListener('click', async () => {
+          btnSendDiscord.disabled = true;
+          btnSendDiscord.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังส่งเข้า Discord...';
+          const currentG = getGreetingForDate(dateStr, specialTypeKey);
+          const ok = await sendSpecialDayDiscordAlert({
+            eventType: specialTypeKey,
+            title: specialTitle,
+            greeting: currentG,
+            dateStr: dateStr,
+            isManual: true
+          });
+          if (ok) {
+            showToast('ส่งการ์ดวันพิเศษเข้า Discord เรียบร้อยแล้วค่ะ 💕', 'success');
+            spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 25);
+          } else {
+            showToast('เกิดข้อผิดพลาดในการส่งเข้า Discord', 'error');
+          }
+          btnSendDiscord.disabled = false;
+          btnSendDiscord.innerHTML = '<i class="fa-brands fa-discord"></i> ส่งการ์ดเข้า Discord 💌';
+        });
       }
 
       // Attach Edit Listeners

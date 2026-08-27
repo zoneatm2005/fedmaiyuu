@@ -3,6 +3,10 @@
   "cleanUrls": true,
   "crons": [
     {
+      "path": "/api/special-day-reminder",
+      "schedule": "0 17 * * *"
+    },
+    {
       "path": "/api/nightly-reminder",
       "schedule": "0 14 * * *"
     }
