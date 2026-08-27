@@ -1,6 +1,12 @@
 {
   "version": 2,
   "cleanUrls": true,
+  "crons": [
+    {
+      "path": "/api/nightly-reminder",
+      "schedule": "0 14 * * *"
+    }
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
