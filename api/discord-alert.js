@@ -32,9 +32,6 @@ export default async function handler(req, res) {
     const PHOTO_UPLOAD_WEBHOOK = process.env.DISCORD_PHOTO_UPLOAD_WEBHOOK ||
       'https://discord.com/api/webhooks/1542140418924216345/86zGkPkSxNHnlU1UJ0KDhNPzQ51On1zMj2uaRRKRdfhj0jyM9MoIdolz6IlhigzJww8v';
 
-    const SPECIAL_DAY_WEBHOOK = process.env.DISCORD_SPECIAL_DAY_WEBHOOK ||
-      'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
-
     // Parse Device Info
     let device = '🌐 อุปกรณ์ทั่วไป';
     if (userAgent) {
@@ -51,50 +48,7 @@ export default async function handler(req, res) {
     let targetWebhook = WRONG_PIN_WEBHOOK;
     let discordPayload = {};
 
-    // 1. Special Day Notification (Anniversary / Birthday)
-    if (type === 'special_day' || type === 'anniversary' || type === 'birthday') {
-      targetWebhook = SPECIAL_DAY_WEBHOOK;
-      const greeting = caption || 'สุขสันต์วันพิเศษของเราสองคนนะคะ 💕';
-      const eventTitle = title || 'สุขสันต์วันพิเศษ 💕';
-      const targetUserId1 = process.env.DISCORD_TARGET_USER_ID_1 || '1198602938109657199';
-      const targetUserId2 = process.env.DISCORD_TARGET_USER_ID_2 || '604625807687680020';
-      const mention1 = targetUserId1.startsWith('<@') ? targetUserId1 : `<@${targetUserId1}>`;
-      const mention2 = targetUserId2.startsWith('<@') ? targetUserId2 : `<@${targetUserId2}>`;
-
-      const embed = {
-        author: {
-          name: '˚ʚ 💖 FRESHMAIYUU SPECIAL CELEBRATION ɞ˚',
-          icon_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png'
-        },
-        title: `🎉 ‧₊˚ 「 ${eventTitle} 」 ˚₊‧ 💕`,
-        description: `> 💌 **คำอวยพรสุดพิเศษ:**\n> ❝ *${greeting}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-        color: 0xFF6584,
-        fields: [
-          {
-            name: '📅 **วันที่ความทรงจำ**',
-            value: `> 🗓️ **${date || 'วันนี้'}**`,
-            inline: true
-          },
-          {
-            name: '⏰ **เวลาที่แจ้งเตือน**',
-            value: `> ⏱️ \`${currentTime}\``,
-            inline: true
-          }
-        ],
-        footer: {
-          text: '🐾 Freshmaiyuu • บันทึกทุกความทรงจำดีๆ ของเราสองคน ( ˘͈ ᵕ ˘͈♡)',
-          icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
-        },
-        timestamp: isoTimestamp
-      };
-
-      discordPayload = {
-        username: '₊˚ 💖 Freshmaiyuu Special Day 💖 ˚₊',
-        avatar_url: 'https://cdn-icons-png.flaticon.com/512/833/833472.png',
-        content: `${mention1} ${mention2} 💕 **วันสำคัญของเรามาถึงแล้วน้าาา!** ✨`,
-        embeds: [embed]
-      };
-    } else if (type === 'photo_upload' || (!enteredPin && (title || imageUrl))) {
+    if (type === 'photo_upload' || (!enteredPin && (title || imageUrl))) {
       // 2. Photo Upload Notification
       targetWebhook = PHOTO_UPLOAD_WEBHOOK;
 
