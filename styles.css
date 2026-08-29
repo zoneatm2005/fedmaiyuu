@@ -2656,4 +2656,707 @@ select:focus {
     transform: translateY(0) scale(1);
   }
 }
+
+/* ==========================================================================
+   TIMER & DISCORD REMINDER SYSTEM STYLES (TAB 4)
+   ========================================================================== */
+
+.timer-setup-card,
+.timer-active-card,
+.timer-history-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Setup Header */
+.timer-setup-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px dashed rgba(255, 107, 139, 0.25);
+}
+
+.timer-icon-badge {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 20px rgba(255, 107, 139, 0.3);
+}
+
+.timer-title {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  color: var(--text-dark);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.timer-subtitle {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Mode Switcher Pills */
+.timer-mode-pills {
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 6px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 107, 139, 0.15);
+  margin-bottom: 22px;
+}
+
+.timer-mode-btn {
+  flex: 1;
+  padding: 10px 18px;
+  border-radius: 50px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+}
+
+.timer-mode-btn.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 107, 139, 0.3);
+}
+
+/* Form Styles */
+.form-group-cute {
+  margin-bottom: 18px;
+}
+
+.form-label-cute {
+  display: block;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+  font-family: var(--font-heading);
+}
+
+/* Preset Chips */
+.timer-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-chip {
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid rgba(255, 107, 139, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preset-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.preset-chip.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(255, 107, 139, 0.3);
+}
+
+/* Custom Time Inputs */
+.custom-time-inputs-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed rgba(255, 107, 139, 0.3);
+  max-width: 380px;
+}
+
+.time-input-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.time-input-col input {
+  width: 76px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 107, 139, 0.3);
+  background: #ffffff;
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-family: var(--font-body);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.time-input-col input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.2);
+}
+
+.time-unit-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.time-colon {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-top: -16px;
+}
+
+/* Target Time Input */
+.target-time-input {
+  width: 100%;
+  max-width: 280px;
+  padding: 14px 20px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(255, 107, 139, 0.3);
+  background: #ffffff;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--primary);
+  outline: none;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+.target-time-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.2);
+}
+
+.input-helper-text {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Cute Select & Cute Text Input */
+.custom-select-wrapper {
+  position: relative;
+}
+
+.cute-select,
+.cute-text-input {
+  width: 100%;
+  padding: 13px 18px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255, 107, 139, 0.28);
+  background: #ffffff;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  color: var(--text-dark);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.cute-select:focus,
+.cute-text-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.18);
+}
+
+/* Quick Suggestion Messages */
+.quick-messages-wrapper {
+  margin-top: 10px;
+}
+
+.quick-msg-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.quick-msg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.msg-chip {
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 107, 139, 0.2);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text-dark);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.msg-chip:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.btn-timer-start {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.15rem;
+  font-weight: 600;
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(255, 107, 139, 0.35);
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   ACTIVE RUNNING TIMER CARD
+   ========================================================================== */
+
+.timer-active-card {
+  text-align: center;
+  border: 2px solid var(--primary);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 240, 243, 0.85) 100%);
+  animation: timerCardEntrance 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes timerCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.timer-badge-running {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 50px;
+  background: rgba(255, 107, 139, 0.12);
+  color: var(--primary);
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4caf50;
+  box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  animation: dotPulse 1.5s infinite;
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+.timer-clock-display-wrapper {
+  margin: 10px 0 20px;
+}
+
+.timer-digits {
+  font-family: 'Kanit', sans-serif;
+  font-size: 4rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+  letter-spacing: 3px;
+  text-shadow: 0 4px 15px rgba(255, 107, 139, 0.25);
+}
+
+.timer-target-time-label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* Progress Bar */
+.timer-progress-container {
+  width: 100%;
+  height: 14px;
+  background: rgba(255, 107, 139, 0.15);
+  border-radius: 50px;
+  overflow: hidden;
+  margin: 18px 0 22px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.timer-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, #c77dff 50%, var(--accent) 100%);
+  border-radius: 50px;
+  transition: width 1s linear;
+  box-shadow: 0 0 12px rgba(255, 107, 139, 0.5);
+}
+
+/* Info Box */
+.timer-active-info-box {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 107, 139, 0.2);
+  margin-bottom: 22px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timer-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.info-val {
+  font-size: 0.92rem;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+/* Controls */
+.timer-active-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-timer-action {
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger-cute {
+  background: #ffebee;
+  color: #d32f2f;
+  border: 1.5px solid #ffcdd2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-danger-cute:hover {
+  background: #f44336;
+  color: #ffffff;
+  border-color: #f44336;
+}
+
+/* History Card */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.history-header h3 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--text-dark);
+}
+
+.btn-clear-text {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-clear-text:hover {
+  color: #f44336;
+}
+
+.timer-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timer-history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 107, 139, 0.18);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.timer-history-item:hover {
+  background: #ffffff;
+  border-color: var(--primary);
+  transform: translateX(4px);
+}
+
+.hist-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hist-msg {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-dark);
+}
+
+.hist-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.hist-rerun-btn {
+  padding: 6px 14px;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.hist-rerun-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.empty-history-text {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   TIMER CELEBRATION ALERT MODAL (MODAL 5)
+   ========================================================================== */
+
+.timer-alert-modal-box {
+  max-width: 460px;
+  text-align: center;
+  padding: 32px 24px 24px;
+  border: 2px solid var(--primary);
+  box-shadow: 0 20px 60px rgba(255, 107, 139, 0.35);
+  animation: modalPopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.timer-modal-bell-glow {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff6b8b 0%, #ff85a1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 35px rgba(255, 107, 139, 0.6);
+  animation: bellGlowPulse 1.5s infinite alternate;
+}
+
+@keyframes bellGlowPulse {
+  from {
+    box-shadow: 0 0 20px rgba(255, 107, 139, 0.5);
+    transform: scale(1);
+  }
+  to {
+    box-shadow: 0 0 45px rgba(255, 107, 139, 0.85);
+    transform: scale(1.08);
+  }
+}
+
+.timer-bell-icon {
+  font-size: 2.5rem;
+}
+
+.timer-modal-title {
+  font-family: var(--font-heading);
+  font-size: 1.55rem;
+  color: var(--text-dark);
+  margin-bottom: 14px;
+}
+
+.timer-modal-message-card {
+  background: var(--primary-light);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  border: 1.5px dashed rgba(255, 107, 139, 0.4);
+  margin-bottom: 18px;
+}
+
+.timer-modal-quote {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  color: var(--primary);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.timer-modal-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.meta-item {
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid rgba(255, 107, 139, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.meta-icon {
+  font-size: 1.1rem;
+}
+
+.meta-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.timer-modal-status-badge {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  border-radius: 50px;
+  padding: 8px 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.timer-modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .timer-digits {
+    font-size: 2.9rem;
+  }
+
+  .custom-time-inputs-grid {
+    width: 100%;
+  }
+
+  .time-input-col input {
+    width: 60px;
+    height: 46px;
+    font-size: 1.3rem;
+  }
+
+  .timer-active-controls {
+    flex-direction: column;
+  }
+
+  .btn-timer-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .timer-modal-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-modal-actions {
+    flex-direction: column;
+  }
+}
+
 

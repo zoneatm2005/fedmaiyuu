@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSpecialAnnualDates();
     checkTodaySpecialCelebrations();
     updateYouMeStats();
+    initTimerSystem();
 
     // Start Online Realtime Cloud Data Sync (Supabase WebSockets & Fallback)
     syncFromCloud();
@@ -2492,6 +2493,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const done = bucketList.filter(b => b.completed).length;
       statBucket.textContent = `${done}/${bucketList.length}`;
     }
+    const statTimer = document.getElementById('stat-timer-status');
+    if (statTimer) {
+      if (activeTimerState && !activeTimerState.isPaused) {
+        statTimer.textContent = 'กำลังจับเวลา';
+        statTimer.style.color = 'var(--primary)';
+      } else if (activeTimerState && activeTimerState.isPaused) {
+        statTimer.textContent = 'พักชั่วคราว';
+        statTimer.style.color = '#ff9800';
+      } else {
+        statTimer.textContent = 'พร้อมใช้';
+        statTimer.style.color = '#2e7d32';
+      }
+    }
     renderSpecialAnnualDates();
   }
 
@@ -2516,13 +2530,726 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Close modals when clicking overlay
-  [uploadModal, lightboxModal, bucketModal, calendarModal].forEach(modal => {
+  const timerAlertModalEl = document.getElementById('timer-alert-modal');
+  [uploadModal, lightboxModal, bucketModal, calendarModal, timerAlertModalEl].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('active');
       });
     }
   });
+
+  // ==========================================================================
+  // 6. TIMER & DISCORD REMINDER SYSTEM LOGIC (TAB 4)
+  // ==========================================================================
+  const DISCORD_TIMER_WEBHOOK = 'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
+
+  let activeTimerState = null;
+  let timerInterval = null;
+  let lastFinishedTimerData = null;
+
+  let timerHistory = [];
+  try {
+    const rawTH = localStorage.getItem('love_timer_history');
+    if (rawTH) timerHistory = JSON.parse(rawTH) || [];
+  } catch (e) { }
+
+  function getMentionDetails(targetVal) {
+    if (targetVal === 'fresh' || targetVal === '1198602938109657199') {
+      return {
+        id: '1198602938109657199',
+        tagText: '<@1198602938109657199>',
+        label: '💖 เฟรช (<@1198602938109657199>)',
+        displayTag: '💖 เฟรช'
+      };
+    }
+    if (targetVal === 'best' || targetVal === '604625807687680020') {
+      return {
+        id: '604625807687680020',
+        tagText: '<@604625807687680020>',
+        label: '🐱 เบส (<@604625807687680020>)',
+        displayTag: '🐱 เบส'
+      };
+    }
+    if (targetVal === 'both' || targetVal === 'everyone' || targetVal === '@everyone') {
+      return {
+        id: 'everyone',
+        tagText: '@everyone',
+        label: '👥 ทั้งคู่ (@everyone)',
+        displayTag: '👥 ทั้งคู่ (@everyone)'
+      };
+    }
+    return {
+      id: 'none',
+      tagText: '',
+      label: '🔕 ไม่ได้แท็กใคร',
+      displayTag: '🔕 ไม่แท็กใคร'
+    };
+  }
+
+  function formatDurationLabel(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    const parts = [];
+    if (hrs > 0) parts.push(`${hrs} ชั่วโมง`);
+    if (mins > 0) parts.push(`${mins} นาที`);
+    if (secs > 0 || parts.length === 0) parts.push(`${secs} วินาที`);
+    return parts.join(' ');
+  }
+
+  function formatTimeDigits(totalSeconds) {
+    const s = Math.max(0, Math.floor(totalSeconds));
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
+    const pad = (n) => n < 10 ? '0' + n : String(n);
+    return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  }
+
+  function playSweetTimerChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+
+      // 4 Sweet ascending melodic bell notes (C5, E5, G5, C6)
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      const nowTime = ctx.currentTime;
+
+      notes.forEach((freq, idx) => {
+        const start = nowTime + idx * 0.18;
+        const dur = 1.3;
+
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+
+        const oscH = ctx.createOscillator();
+        const gainH = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+
+        oscH.type = 'triangle';
+        oscH.frequency.setValueAtTime(freq * 2.76, start);
+
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(0.32, start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+
+        gainH.gain.setValueAtTime(0, start);
+        gainH.gain.linearRampToValueAtTime(0.08, start + 0.02);
+        gainH.gain.exponentialRampToValueAtTime(0.0001, start + dur * 0.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        oscH.connect(gainH);
+        gainH.connect(ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + dur);
+
+        oscH.start(start);
+        oscH.stop(start + dur);
+      });
+    } catch (err) {
+      console.warn('Audio chime error:', err);
+    }
+  }
+
+  async function sendTimerDiscordAlert(timerData) {
+    const mention = getMentionDetails(timerData.mentionTarget);
+    const durationLabel = formatDurationLabel(timerData.totalSeconds);
+    const device = getDeviceInfo();
+
+    const payload = {
+      message: timerData.message,
+      mentionTarget: timerData.mentionTarget,
+      durationLabel: durationLabel,
+      startTime: timerData.startTimeStr,
+      endTime: timerData.endTimeStr,
+      userAgent: navigator.userAgent,
+      presetName: timerData.presetName || ''
+    };
+
+    let sent = false;
+    try {
+      const res = await fetch('/api/timer-alert', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) sent = true;
+    } catch (e) {
+      console.warn('/api/timer-alert fallback to direct webhook:', e);
+    }
+
+    if (!sent) {
+      try {
+        const embed = {
+          author: {
+            name: '˚ʚ ⏰ Freshmaiyuu Timer & Reminder ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
+          },
+          title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
+          description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${timerData.message}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFF6584,
+          fields: [
+            {
+              name: '⏱️ **ระยะเวลาที่จับ**',
+              value: `> ⏳ **${durationLabel}**${timerData.presetName ? ` (${timerData.presetName})` : ''}`,
+              inline: true
+            },
+            {
+              name: '👤 **แจ้งเตือนถึง**',
+              value: `> ${mention.label}`,
+              inline: true
+            },
+            {
+              name: '⏰ **เวลาที่เริ่มจับ**',
+              value: `> 🕒 \`${timerData.startTimeStr}\``,
+              inline: false
+            },
+            {
+              name: '🔔 **เวลาที่ครบกำหนด**',
+              value: `> ✨ \`${timerData.endTimeStr}\``,
+              inline: false
+            },
+            {
+              name: '📱 **อุปกรณ์ที่ตั้งเตือน**',
+              value: `> ${device}`,
+              inline: true
+            }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: new Date().toISOString()
+        };
+
+        const discordPayload = {
+          username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
+          avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
+          content: mention.tagText ? `${mention.tagText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
+          embeds: [embed]
+        };
+
+        await fetch(DISCORD_TIMER_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(discordPayload)
+        });
+      } catch (err) {
+        console.warn('Direct Discord Timer Webhook error:', err);
+      }
+    }
+  }
+
+  function initTimerSystem() {
+    const timerActiveCard = document.getElementById('timer-active-card');
+    const timerSetupCard = document.getElementById('timer-setup-card');
+    const timerStatusText = document.getElementById('timer-status-text');
+    const timerDigitsDisplay = document.getElementById('timer-digits-display');
+    const timerTargetTimeLabel = document.getElementById('timer-target-time-label');
+    const timerProgressBar = document.getElementById('timer-progress-bar');
+    const activeTimerMessage = document.getElementById('active-timer-message');
+    const activeTimerTarget = document.getElementById('active-timer-target');
+
+    const timerPauseBtn = document.getElementById('timer-pause-btn');
+    const timerAdd1mBtn = document.getElementById('timer-add-1m-btn');
+    const timerAdd5mBtn = document.getElementById('timer-add-5m-btn');
+    const timerCancelBtn = document.getElementById('timer-cancel-btn');
+
+    const startTimerBtn = document.getElementById('start-timer-btn');
+    const timerMentionSelect = document.getElementById('timer-mention-select');
+    const timerMessageInput = document.getElementById('timer-message-input');
+    const customHours = document.getElementById('custom-hours');
+    const customMinutes = document.getElementById('custom-minutes');
+    const customSeconds = document.getElementById('custom-seconds');
+    const targetAlarmTime = document.getElementById('target-alarm-time');
+
+    const timerPresetChips = document.querySelectorAll('.preset-chip');
+    const quickMsgChips = document.querySelectorAll('.msg-chip');
+    const timerModeBtns = document.querySelectorAll('.timer-mode-btn');
+    const modeCountdownSection = document.getElementById('mode-countdown-section');
+    const modeTargetTimeSection = document.getElementById('mode-target-time-section');
+
+    const timerHistoryList = document.getElementById('timer-history-list');
+    const clearTimerHistoryBtn = document.getElementById('clear-timer-history-btn');
+
+    const timerAlertModal = document.getElementById('timer-alert-modal');
+    const closeTimerModalBtn = document.getElementById('close-timer-modal-btn');
+    const rerunFinishedTimerBtn = document.getElementById('rerun-finished-timer-btn');
+    const modalFinishedMessage = document.getElementById('modal-finished-message');
+    const modalFinishedTarget = document.getElementById('modal-finished-target');
+    const modalFinishedDuration = document.getElementById('modal-finished-duration');
+
+    let currentTimerMode = 'countdown';
+    let selectedPresetSeconds = 300; // Default 5 minutes
+    let selectedPresetLabel = '5 นาที ☕';
+
+    // 1. Mode Switching
+    timerModeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        timerModeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTimerMode = btn.dataset.mode;
+
+        if (currentTimerMode === 'countdown') {
+          modeCountdownSection.style.display = 'block';
+          modeTargetTimeSection.style.display = 'none';
+        } else {
+          modeCountdownSection.style.display = 'none';
+          modeTargetTimeSection.style.display = 'block';
+          // Set default target time to 15 mins from now if empty
+          if (!targetAlarmTime.value) {
+            const d = new Date(Date.now() + 15 * 60 * 1000);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            targetAlarmTime.value = `${hh}:${mm}`;
+          }
+        }
+      });
+    });
+
+    // 2. Preset Chips Click
+    timerPresetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        timerPresetChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        const secs = parseInt(chip.dataset.seconds, 10);
+        selectedPresetSeconds = secs;
+        selectedPresetLabel = chip.textContent.trim();
+
+        // Sync custom inputs
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        if (customHours) customHours.value = h;
+        if (customMinutes) customMinutes.value = m;
+        if (customSeconds) customSeconds.value = s;
+      });
+    });
+
+    // 3. Custom Time Input Sync
+    [customHours, customMinutes, customSeconds].forEach(input => {
+      if (input) {
+        input.addEventListener('input', () => {
+          timerPresetChips.forEach(c => c.classList.remove('active'));
+          selectedPresetLabel = '';
+        });
+      }
+    });
+
+    // 4. Quick Message Chips Click
+    quickMsgChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const msg = chip.dataset.msg;
+        if (timerMessageInput && msg) {
+          timerMessageInput.value = msg;
+          timerMessageInput.focus();
+        }
+      });
+    });
+
+    // 5. Render History List
+    function renderTimerHistory() {
+      if (!timerHistoryList) return;
+      timerHistoryList.innerHTML = '';
+
+      if (!timerHistory || timerHistory.length === 0) {
+        timerHistoryList.innerHTML = '<div class="empty-history-text">ยังไม่มีประวัติการตั้งเวลา</div>';
+        return;
+      }
+
+      timerHistory.slice(0, 8).forEach(item => {
+        const mention = getMentionDetails(item.mentionTarget);
+        const durationText = formatDurationLabel(item.totalSeconds);
+
+        const card = document.createElement('div');
+        card.className = 'timer-history-item';
+        card.innerHTML = `
+          <div class="hist-left">
+            <div class="hist-msg">${escapeHtml(item.message || 'จับเวลาเตือนความจำ')}</div>
+            <div class="hist-meta">⏱️ ${durationText} • แจ้งเตือน: ${mention.displayTag}</div>
+          </div>
+          <button type="button" class="hist-rerun-btn" title="เริ่มจับเวลาตามการตั้งค่านี้">
+            <i class="fa-solid fa-play"></i> เริ่มซ้ำ
+          </button>
+        `;
+
+        card.querySelector('.hist-rerun-btn').addEventListener('click', () => {
+          startNewTimer({
+            totalSeconds: item.totalSeconds,
+            message: item.message,
+            mentionTarget: item.mentionTarget,
+            presetName: item.presetName || ''
+          });
+        });
+
+        timerHistoryList.appendChild(card);
+      });
+    }
+
+    if (clearTimerHistoryBtn) {
+      clearTimerHistoryBtn.addEventListener('click', () => {
+        if (confirm('ต้องการล้างประวัติการตั้งเวลาทั้งหมดหรือไม่?')) {
+          timerHistory = [];
+          localStorage.removeItem('love_timer_history');
+          renderTimerHistory();
+          showToast('ล้างประวัติการตั้งเวลาเรียบร้อยแล้ว ✨', 'info');
+        }
+      });
+    }
+
+    // 6. Save to History
+    function saveTimerToHistory(config) {
+      timerHistory = timerHistory.filter(h =>
+        !(h.totalSeconds === config.totalSeconds && h.message === config.message && h.mentionTarget === config.mentionTarget)
+      );
+      timerHistory.unshift({
+        totalSeconds: config.totalSeconds,
+        message: config.message,
+        mentionTarget: config.mentionTarget,
+        presetName: config.presetName || '',
+        timestamp: Date.now()
+      });
+      if (timerHistory.length > 20) timerHistory = timerHistory.slice(0, 20);
+      try {
+        localStorage.setItem('love_timer_history', JSON.stringify(timerHistory));
+      } catch (e) { }
+      renderTimerHistory();
+    }
+
+    // 7. Start New Timer
+    function startNewTimer({ totalSeconds, message, mentionTarget, presetName }) {
+      if (totalSeconds <= 0) {
+        showToast('กรุณาระบุระยะเวลาจับเวลาที่มากกว่า 0 วินาทีครับ', 'error');
+        return;
+      }
+
+      const now = new Date();
+      const endTime = new Date(now.getTime() + totalSeconds * 1000);
+
+      const timeFormatOptions = {
+        timeZone: 'Asia/Bangkok',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      };
+
+      const startTimeStr = now.toLocaleTimeString('th-TH', timeFormatOptions);
+      const endTimeStr = endTime.toLocaleTimeString('th-TH', timeFormatOptions);
+
+      activeTimerState = {
+        id: 'timer-' + Date.now(),
+        totalSeconds: totalSeconds,
+        targetEndTime: endTime.getTime(),
+        startTimeStr: startTimeStr,
+        endTimeStr: endTimeStr,
+        message: message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ! 💕',
+        mentionTarget: mentionTarget || 'none',
+        presetName: presetName || '',
+        isPaused: false,
+        pausedRemaining: totalSeconds
+      };
+
+      try {
+        localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState));
+      } catch (e) { }
+
+      saveTimerToHistory(activeTimerState);
+
+      renderActiveTimerUI();
+      startTimerTicker();
+      updateYouMeStats();
+
+      spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 20);
+      showToast(`เริ่มจับเวลา ${formatDurationLabel(totalSeconds)} เรียบร้อยแล้ว ⏱️`, 'success');
+    }
+
+    // 8. Render Active Timer UI
+    function renderActiveTimerUI() {
+      if (!activeTimerState) {
+        if (timerActiveCard) timerActiveCard.style.display = 'none';
+        if (timerSetupCard) timerSetupCard.style.display = 'block';
+        return;
+      }
+
+      if (timerActiveCard) timerActiveCard.style.display = 'block';
+      if (timerSetupCard) timerSetupCard.style.display = 'none';
+
+      const mention = getMentionDetails(activeTimerState.mentionTarget);
+      if (activeTimerMessage) activeTimerMessage.textContent = activeTimerState.message;
+      if (activeTimerTarget) activeTimerTarget.innerHTML = `${mention.label}`;
+
+      if (activeTimerState.isPaused) {
+        if (timerStatusText) timerStatusText.textContent = '⏸️ พักชั่วคราว';
+        if (timerPauseBtn) timerPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i> นับต่อ';
+        if (timerTargetTimeLabel) timerTargetTimeLabel.textContent = `หยุดอยู่ที่ ${formatDurationLabel(activeTimerState.pausedRemaining)}`;
+      } else {
+        if (timerStatusText) timerStatusText.textContent = 'กำลังจับเวลา...';
+        if (timerPauseBtn) timerPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i> พักชั่วคราว';
+        if (timerTargetTimeLabel) timerTargetTimeLabel.textContent = `จะครบเวลาในเวลา ${activeTimerState.endTimeStr} น.`;
+      }
+    }
+
+    // 9. Timer Ticker Interval
+    function startTimerTicker() {
+      if (timerInterval) clearInterval(timerInterval);
+
+      function tick() {
+        if (!activeTimerState) {
+          clearInterval(timerInterval);
+          return;
+        }
+
+        if (activeTimerState.isPaused) {
+          if (timerDigitsDisplay) timerDigitsDisplay.textContent = formatTimeDigits(activeTimerState.pausedRemaining);
+          const pct = Math.min(100, Math.max(0, (activeTimerState.pausedRemaining / activeTimerState.totalSeconds) * 100));
+          if (timerProgressBar) timerProgressBar.style.width = `${pct}%`;
+          return;
+        }
+
+        const nowMs = Date.now();
+        const diffMs = activeTimerState.targetEndTime - nowMs;
+        const remainingSeconds = Math.max(0, Math.ceil(diffMs / 1000));
+
+        if (timerDigitsDisplay) {
+          timerDigitsDisplay.textContent = formatTimeDigits(remainingSeconds);
+        }
+
+        const pct = Math.min(100, Math.max(0, (remainingSeconds / activeTimerState.totalSeconds) * 100));
+        if (timerProgressBar) {
+          timerProgressBar.style.width = `${pct}%`;
+        }
+
+        if (remainingSeconds <= 0) {
+          clearInterval(timerInterval);
+          triggerTimerCompletion();
+        }
+      }
+
+      tick();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    // 10. Timer Finished Action
+    async function triggerTimerCompletion() {
+      const finishedTimer = activeTimerState ? { ...activeTimerState } : null;
+      lastFinishedTimerData = finishedTimer;
+
+      activeTimerState = null;
+      try {
+        localStorage.removeItem('love_active_timer');
+      } catch (e) { }
+
+      renderActiveTimerUI();
+      updateYouMeStats();
+
+      // Play Sound Chime
+      playSweetTimerChime();
+
+      // Spawn Confetti / Hearts Burst
+      spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
+
+      if (finishedTimer) {
+        // Send Discord Webhook Alert
+        sendTimerDiscordAlert(finishedTimer);
+
+        // Open Alert Modal
+        if (modalFinishedMessage) modalFinishedMessage.textContent = `"${finishedTimer.message}"`;
+        const mention = getMentionDetails(finishedTimer.mentionTarget);
+        if (modalFinishedTarget) modalFinishedTarget.textContent = `แท็ก: ${mention.displayTag}`;
+        if (modalFinishedDuration) modalFinishedDuration.textContent = `ระยะเวลา: ${formatDurationLabel(finishedTimer.totalSeconds)}`;
+
+        if (timerAlertModal) {
+          timerAlertModal.classList.add('active');
+        }
+
+        showToast(`⏰ หมดเวลาจับเวลาแล้ว: "${finishedTimer.message}"`, 'success', 6000);
+      }
+    }
+
+    // 11. Active Controls
+    if (timerPauseBtn) {
+      timerPauseBtn.addEventListener('click', () => {
+        if (!activeTimerState) return;
+
+        if (activeTimerState.isPaused) {
+          // Resume
+          activeTimerState.isPaused = false;
+          activeTimerState.targetEndTime = Date.now() + activeTimerState.pausedRemaining * 1000;
+          const endD = new Date(activeTimerState.targetEndTime);
+          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          showToast('จับเวลานับต่อแล้ว ⏱️', 'info');
+        } else {
+          // Pause
+          const diffMs = activeTimerState.targetEndTime - Date.now();
+          activeTimerState.pausedRemaining = Math.max(0, Math.ceil(diffMs / 1000));
+          activeTimerState.isPaused = true;
+          showToast('พักการจับเวลาชั่วคราว ⏸️', 'info');
+        }
+
+        try {
+          localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState));
+        } catch (e) { }
+
+        renderActiveTimerUI();
+        updateYouMeStats();
+      });
+    }
+
+    if (timerAdd1mBtn) {
+      timerAdd1mBtn.addEventListener('click', () => {
+        if (!activeTimerState) return;
+        activeTimerState.totalSeconds += 60;
+        if (activeTimerState.isPaused) {
+          activeTimerState.pausedRemaining += 60;
+        } else {
+          activeTimerState.targetEndTime += 60 * 1000;
+          const endD = new Date(activeTimerState.targetEndTime);
+          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        try {
+          localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState));
+        } catch (e) { }
+        renderActiveTimerUI();
+        showToast('เพิ่มเวลา +1 นาที เรียบร้อยแล้ว ✨', 'info');
+      });
+    }
+
+    if (timerAdd5mBtn) {
+      timerAdd5mBtn.addEventListener('click', () => {
+        if (!activeTimerState) return;
+        activeTimerState.totalSeconds += 300;
+        if (activeTimerState.isPaused) {
+          activeTimerState.pausedRemaining += 300;
+        } else {
+          activeTimerState.targetEndTime += 300 * 1000;
+          const endD = new Date(activeTimerState.targetEndTime);
+          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        try {
+          localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState));
+        } catch (e) { }
+        renderActiveTimerUI();
+        showToast('เพิ่มเวลา +5 นาที เรียบร้อยแล้ว ✨', 'info');
+      });
+    }
+
+    if (timerCancelBtn) {
+      timerCancelBtn.addEventListener('click', () => {
+        if (confirm('คุณต้องการยกเลิกการจับเวลานี้ใช่หรือไม่?')) {
+          if (timerInterval) clearInterval(timerInterval);
+          activeTimerState = null;
+          try {
+            localStorage.removeItem('love_active_timer');
+          } catch (e) { }
+          renderActiveTimerUI();
+          updateYouMeStats();
+          showToast('ยกเลิกการจับเวลาเรียบร้อยแล้ว ❌', 'info');
+        }
+      });
+    }
+
+    // 12. Start Timer Button Click
+    if (startTimerBtn) {
+      startTimerBtn.addEventListener('click', () => {
+        let computedSeconds = 0;
+        let presetName = selectedPresetLabel;
+
+        if (currentTimerMode === 'countdown') {
+          const h = parseInt(customHours ? customHours.value : 0, 10) || 0;
+          const m = parseInt(customMinutes ? customMinutes.value : 0, 10) || 0;
+          const s = parseInt(customSeconds ? customSeconds.value : 0, 10) || 0;
+          computedSeconds = h * 3600 + m * 60 + s;
+        } else {
+          // Target Time mode
+          if (!targetAlarmTime || !targetAlarmTime.value) {
+            showToast('กรุณาระบุเวลาเป้าหมายที่ต้องการให้เตือนครับ', 'error');
+            return;
+          }
+          const [thH, thM] = targetAlarmTime.value.split(':').map(Number);
+          const nowD = new Date();
+          let targetD = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate(), thH, thM, 0);
+
+          if (targetD.getTime() <= nowD.getTime()) {
+            // Target is earlier today -> set for tomorrow
+            targetD = new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate() + 1, thH, thM, 0);
+          }
+
+          computedSeconds = Math.max(1, Math.ceil((targetD.getTime() - nowD.getTime()) / 1000));
+          presetName = `เวลา ${targetAlarmTime.value} น.`;
+        }
+
+        const msg = timerMessageInput ? timerMessageInput.value.trim() : 'ต้มมาม่าเสร็จแล้วน้าา 🍜';
+        const mention = timerMentionSelect ? timerMentionSelect.value : 'none';
+
+        startNewTimer({
+          totalSeconds: computedSeconds,
+          message: msg,
+          mentionTarget: mention,
+          presetName: presetName
+        });
+      });
+    }
+
+    // 13. Modal Buttons
+    if (closeTimerModalBtn) {
+      closeTimerModalBtn.addEventListener('click', () => {
+        if (timerAlertModal) timerAlertModal.classList.remove('active');
+      });
+    }
+
+    if (rerunFinishedTimerBtn) {
+      rerunFinishedTimerBtn.addEventListener('click', () => {
+        if (timerAlertModal) timerAlertModal.classList.remove('active');
+        if (lastFinishedTimerData) {
+          startNewTimer({
+            totalSeconds: lastFinishedTimerData.totalSeconds,
+            message: lastFinishedTimerData.message,
+            mentionTarget: lastFinishedTimerData.mentionTarget,
+            presetName: lastFinishedTimerData.presetName
+          });
+        }
+      });
+    }
+
+    // 14. Restore Active Timer from LocalStorage on page load
+    try {
+      const savedTimer = localStorage.getItem('love_active_timer');
+      if (savedTimer) {
+        const parsed = JSON.parse(savedTimer);
+        if (parsed && parsed.targetEndTime) {
+          if (parsed.isPaused) {
+            activeTimerState = parsed;
+            renderActiveTimerUI();
+            startTimerTicker();
+          } else {
+            const now = Date.now();
+            if (now < parsed.targetEndTime) {
+              activeTimerState = parsed;
+              renderActiveTimerUI();
+              startTimerTicker();
+            } else {
+              // Timer finished while page was closed
+              triggerTimerCompletion();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Error restoring active timer:', e);
+    }
+
+    renderTimerHistory();
+  }
 
   // ==========================================================================
   // 7. FLOATING HEARTS BACKGROUND CANVAS & INTERACTIVE BURST
