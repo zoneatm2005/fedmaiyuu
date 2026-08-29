@@ -2190,9 +2190,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (entries.length === 0) {
       calModalEntriesList.innerHTML = `
-        <div style="text-align: center; color: var(--text-muted); padding: 14px; background: rgba(255,255,255,0.7); border-radius: 12px; font-size: 0.92rem;">
-          <p>📝 ยังไม่มีบันทึกสำหรับวันนี้</p>
-          <span style="font-size: 0.82rem;">เขียนกิจกรรมหวานๆ หรือสิ่งที่ทำด้วยกันด้านล่างได้เลย 💕</span>
+        <div class="cal-empty-entries-box">
+          <p style="font-weight: 600; margin-bottom: 2px;">📝 ยังไม่มีบันทึกสำหรับวันนี้</p>
+          <span style="font-size: 0.84rem;">เขียนกิจกรรมหวานๆ หรือสิ่งที่ทำด้วยกันด้านล่างได้เลย 💕</span>
         </div>
       `;
       return;
