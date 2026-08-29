@@ -107,9 +107,6 @@
       <button class="nav-tab" data-tab="tab-bucket">
         <i class="fa-solid fa-heart-circle-check"></i> ลิสต์คู่
       </button>
-      <button class="nav-tab" data-tab="tab-timer">
-        <i class="fa-solid fa-stopwatch"></i> จับเวลาเตือน ⏱️
-      </button>
     </nav>
 
     <!-- ==========================================================================
@@ -196,15 +193,6 @@
           <div class="stat-info">
             <div class="stat-num" id="stat-bucket-count">0</div>
             <div class="stat-label">ลิสต์คู่ที่อยากทำ</div>
-          </div>
-          <i class="fa-solid fa-chevron-right stat-arrow"></i>
-        </div>
-
-        <div class="youme-stat-card" data-goto="tab-timer">
-          <div class="stat-icon">⏱️</div>
-          <div class="stat-info">
-            <div class="stat-num" id="stat-timer-status">พร้อมใช้</div>
-            <div class="stat-label">จับเวลา & เตือน</div>
           </div>
           <i class="fa-solid fa-chevron-right stat-arrow"></i>
         </div>
@@ -350,197 +338,6 @@
 
         <div class="bucket-list" id="bucket-list-container">
           <!-- Rendered dynamically -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ==========================================================================
-         TAB 4: TIMER & DISCORD REMINDER SYSTEM
-         ========================================================================== -->
-    <section id="tab-timer" class="tab-content">
-      <!-- Active Timer Screen (Shown when timer is running or paused) -->
-      <div class="timer-active-card" id="timer-active-card" style="display: none;">
-        <div class="timer-badge-running">
-          <span class="pulse-dot"></span>
-          <span id="timer-status-text">กำลังจับเวลา...</span>
-        </div>
-
-        <!-- Large Digital Timer Display -->
-        <div class="timer-clock-display-wrapper">
-          <div class="timer-digits" id="timer-digits-display">00:00:00</div>
-          <div class="timer-target-time-label" id="timer-target-time-label">
-            จะครบเวลาในเวลา --:-- น.
-          </div>
-        </div>
-
-        <!-- Animated Progress Bar -->
-        <div class="timer-progress-container">
-          <div class="timer-progress-bar" id="timer-progress-bar" style="width: 100%;"></div>
-        </div>
-
-        <!-- Active Timer Details Box -->
-        <div class="timer-active-info-box">
-          <div class="timer-info-row">
-            <span class="info-label"><i class="fa-solid fa-bell" style="color: var(--primary);"></i> ข้อความเตือน:</span>
-            <span class="info-val" id="active-timer-message">-</span>
-          </div>
-          <div class="timer-info-row">
-            <span class="info-label"><i class="fa-solid fa-user-tag" style="color: var(--primary);"></i> แท็กแจ้งเตือน:</span>
-            <span class="info-val" id="active-timer-target">-</span>
-          </div>
-        </div>
-
-        <!-- Active Timer Action Buttons -->
-        <div class="timer-active-controls">
-          <button type="button" id="timer-pause-btn" class="btn btn-secondary btn-timer-action">
-            <i class="fa-solid fa-pause"></i> พักชั่วคราว
-          </button>
-          <button type="button" id="timer-add-1m-btn" class="btn btn-secondary btn-timer-action">
-            <i class="fa-solid fa-plus"></i> 1 นาที
-          </button>
-          <button type="button" id="timer-add-5m-btn" class="btn btn-secondary btn-timer-action">
-            <i class="fa-solid fa-plus"></i> 5 นาที
-          </button>
-          <button type="button" id="timer-cancel-btn" class="btn btn-danger-cute btn-timer-action">
-            <i class="fa-solid fa-xmark"></i> ยกเลิก
-          </button>
-        </div>
-      </div>
-
-      <!-- Timer Setup & Creation Card -->
-      <div class="timer-setup-card" id="timer-setup-card">
-        <div class="timer-setup-header">
-          <div class="timer-icon-badge">⏱️</div>
-          <div>
-            <h2 class="timer-title">ระบบจับเวลา & เตือนความจำ 💕</h2>
-            <p class="timer-subtitle">ตั้งเวลานับถอยหลัง พิมพ์ข้อความเตือน และเลือกแท็กคนส่งตรงเข้า Discord</p>
-          </div>
-        </div>
-
-        <!-- Timer Mode Selector Tabs -->
-        <div class="timer-mode-pills">
-          <button type="button" class="timer-mode-btn active" data-mode="countdown">
-            <i class="fa-solid fa-hourglass-half"></i> นับถอยหลัง (Countdown)
-          </button>
-          <button type="button" class="timer-mode-btn" data-mode="target-time">
-            <i class="fa-solid fa-clock"></i> ระบุเวลาตามนาฬิกา (Alarm)
-          </button>
-        </div>
-
-        <!-- 1. Countdown Mode Inputs -->
-        <div id="mode-countdown-section" class="timer-mode-content">
-          <!-- Quick Preset Chips -->
-          <div class="form-group-cute">
-            <label class="form-label-cute">
-              <i class="fa-solid fa-bolt" style="color: var(--primary);"></i> เลือกเวลานับถอยหลังด่วน:
-            </label>
-            <div class="timer-preset-chips" id="timer-preset-chips">
-              <button type="button" class="preset-chip" data-seconds="60">1 นาที ⚡</button>
-              <button type="button" class="preset-chip" data-seconds="180">3 นาที 🍜</button>
-              <button type="button" class="preset-chip active" data-seconds="300">5 นาที ☕</button>
-              <button type="button" class="preset-chip" data-seconds="600">10 นาที 🚿</button>
-              <button type="button" class="preset-chip" data-seconds="900">15 นาที 🧺</button>
-              <button type="button" class="preset-chip" data-seconds="1500">25 นาที 🍅</button>
-              <button type="button" class="preset-chip" data-seconds="1800">30 นาที 🎮</button>
-              <button type="button" class="preset-chip" data-seconds="2700">45 นาที 📖</button>
-              <button type="button" class="preset-chip" data-seconds="3600">1 ชม. 🌙</button>
-              <button type="button" class="preset-chip" data-seconds="7200">2 ชม. 💤</button>
-            </div>
-          </div>
-
-          <!-- Custom Time Input Fields -->
-          <div class="form-group-cute" style="margin-top: 14px;">
-            <label class="form-label-cute">
-              <i class="fa-solid fa-pen-ruler" style="color: var(--primary);"></i> หรือกำหนดเวลาเอง:
-            </label>
-            <div class="custom-time-inputs-grid">
-              <div class="time-input-col">
-                <input type="number" id="custom-hours" min="0" max="99" value="0" placeholder="00">
-                <span class="time-unit-label">ชั่วโมง</span>
-              </div>
-              <div class="time-colon">:</div>
-              <div class="time-input-col">
-                <input type="number" id="custom-minutes" min="0" max="59" value="5" placeholder="05">
-                <span class="time-unit-label">นาที</span>
-              </div>
-              <div class="time-colon">:</div>
-              <div class="time-input-col">
-                <input type="number" id="custom-seconds" min="0" max="59" value="0" placeholder="00">
-                <span class="time-unit-label">วินาที</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Target Clock Time Mode Section -->
-        <div id="mode-target-time-section" class="timer-mode-content" style="display: none;">
-          <div class="form-group-cute">
-            <label class="form-label-cute">
-              <i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> เลือกเวลาเป้าหมายที่ต้องการให้เตือน:
-            </label>
-            <input type="time" id="target-alarm-time" class="target-time-input">
-            <p class="input-helper-text">ระบบจะคำนวณเวลาที่เหลือจนถึงเวลาเป้าหมายและส่งแจ้งเตือนเมื่อถึงเวลา</p>
-          </div>
-        </div>
-
-        <!-- Who to Tag (Mention Selector) -->
-        <div class="form-group-cute" style="margin-top: 16px;">
-          <label class="form-label-cute" for="timer-mention-select">
-            <i class="fa-solid fa-user-tag" style="color: var(--primary);"></i> เลือกแท็กแจ้งเตือนใครผ่าน Discord:
-          </label>
-          <div class="custom-select-wrapper">
-            <select id="timer-mention-select" class="cute-select">
-              <option value="fresh">💖 แท็กแฟน (เฟรช) — &lt;@1198602938109657199&gt;</option>
-              <option value="best">🐱 แท็กตัวเอง (เบส) — &lt;@604625807687680020&gt;</option>
-              <option value="both">👥 แท็กทั้งคู่ (@everyone)</option>
-              <option value="none">🔕 ไม่แท็กใคร (ส่งเฉพาะการ์ดแจ้งเตือน)</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Custom Reminder Message -->
-        <div class="form-group-cute" style="margin-top: 16px;">
-          <label class="form-label-cute" for="timer-message-input">
-            <i class="fa-solid fa-message" style="color: var(--primary);"></i> ข้อความแจ้งเตือน (Custom Message):
-          </label>
-          <input type="text" id="timer-message-input" class="cute-text-input"
-            placeholder="เช่น ต้มมาม่าเสร็จแล้วน้าา 🍜 / อย่าลืมกินยานะคะ 💊" value="ต้มมาม่าเสร็จแล้วน้าา 🍜">
-
-          <!-- Quick Suggestion Message Chips -->
-          <div class="quick-messages-wrapper">
-            <span class="quick-msg-label">💡 ข้อความด่วน:</span>
-            <div class="quick-msg-chips">
-              <button type="button" class="msg-chip" data-msg="ต้มมาม่าเสร็จแล้วน้าา 🍜">🍜 ต้มมาม่า</button>
-              <button type="button" class="msg-chip" data-msg="อย่าลืมกินยานะคะที่รัก 💊">💊 กินยา</button>
-              <button type="button" class="msg-chip" data-msg="ดึกแล้ว เข้านอนได้แล้วน้าา คิดถึงนะ 🌙💤">🌙 เข้านอน</button>
-              <button type="button" class="msg-chip" data-msg="คิดถึงจัง โทรหาเค้าหน่อยสิคะ 📱💕">📱 โทรหาหน่อย</button>
-              <button type="button" class="msg-chip" data-msg="ซักผ้า / ตากผ้าเสร็จแล้วน้าา 🧺">🧺 ซักผ้า</button>
-              <button type="button" class="msg-chip" data-msg="ดื่มน้ำเยอะๆ นะคะคนเก่ง 💧">💧 ดื่มน้ำ</button>
-              <button type="button" class="msg-chip" data-msg="พักสายตา ยืดเส้นยืดสายหน่อยนะ ☕">☕ พักสายตา</button>
-              <button type="button" class="msg-chip" data-msg="เลิกเล่นเกมได้แล้วน้าา มาคุยกัน 🎮💖">🎮 เลิกเล่นเกม</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Start Button -->
-        <div class="timer-submit-wrapper" style="margin-top: 24px;">
-          <button type="button" id="start-timer-btn" class="btn btn-primary btn-timer-start">
-            <i class="fa-solid fa-play"></i> เริ่มจับเวลา & ตั้งเตือน Discord 🚀
-          </button>
-        </div>
-      </div>
-
-      <!-- Recent / Quick Rerun Timers History -->
-      <div class="timer-history-card">
-        <div class="history-header">
-          <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> ประวัติการตั้งเวลาล่าสุด</h3>
-          <button type="button" id="clear-timer-history-btn" class="btn-clear-text" title="ล้างประวัติ">
-            ล้างประวัติ
-          </button>
-        </div>
-        <div class="timer-history-list" id="timer-history-list">
-          <!-- Rendered dynamically -->
-          <div class="empty-history-text">ยังไม่มีประวัติการตั้งเวลา</div>
         </div>
       </div>
     </section>
@@ -777,6 +574,113 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ==========================================================================
+       6. FLOATING QUICK TIMER WIDGET & FAB (BOTTOM-RIGHT)
+       ========================================================================== -->
+  <div class="floating-timer-wrapper" id="floating-timer-wrapper">
+    <!-- Floating Mini Popup Panel -->
+    <div class="floating-timer-panel" id="floating-timer-panel">
+      <div class="float-panel-header">
+        <div class="float-panel-title">
+          <span class="float-title-icon">⏱️</span>
+          <span>จับเวลา & แจ้งเตือน 💕</span>
+        </div>
+        <div class="float-panel-actions">
+          <button type="button" id="float-close-panel-btn" class="float-action-icon-btn" title="ปิดหน้าต่าง">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- State A: Floating Running Timer View -->
+      <div id="float-running-view" style="display: none;">
+        <div class="float-running-badge">
+          <span class="pulse-dot"></span> <span id="float-running-status-text">กำลังจับเวลา...</span>
+        </div>
+        <div class="float-digits" id="float-digits">00:00:00</div>
+        
+        <div class="float-progress-container">
+          <div class="float-progress-bar" id="float-progress-bar" style="width: 100%;"></div>
+        </div>
+
+        <div class="float-info-card">
+          <div class="float-info-line">
+            <span class="lbl"><i class="fa-solid fa-bell"></i> ข้อความ:</span>
+            <span class="val" id="float-active-msg">-</span>
+          </div>
+          <div class="float-info-line">
+            <span class="lbl"><i class="fa-solid fa-user-tag"></i> แท็ก:</span>
+            <span class="val" id="float-active-target">-</span>
+          </div>
+        </div>
+
+        <div class="float-running-actions">
+          <button type="button" id="float-pause-btn" class="btn btn-secondary btn-sm-cute">
+            <i class="fa-solid fa-pause"></i> พัก
+          </button>
+          <button type="button" id="float-add1m-btn" class="btn btn-secondary btn-sm-cute">
+            +1 นาที
+          </button>
+          <button type="button" id="float-add5m-btn" class="btn btn-secondary btn-sm-cute">
+            +5 นาที
+          </button>
+          <button type="button" id="float-cancel-btn" class="btn btn-danger-cute btn-sm-cute">
+            ยกเลิก
+          </button>
+        </div>
+      </div>
+
+      <!-- State B: Floating Quick Setup View -->
+      <div id="float-setup-view">
+        <label class="float-field-label">เลือกเวลานับถอยหลังด่วน:</label>
+        <div class="float-presets-grid" id="float-presets-grid">
+          <button type="button" class="float-preset-chip" data-secs="60">1m ⚡</button>
+          <button type="button" class="float-preset-chip" data-secs="180">3m 🍜</button>
+          <button type="button" class="float-preset-chip active" data-secs="300">5m ☕</button>
+          <button type="button" class="float-preset-chip" data-secs="600">10m 🚿</button>
+          <button type="button" class="float-preset-chip" data-secs="900">15m 🧺</button>
+          <button type="button" class="float-preset-chip" data-secs="1500">25m 🍅</button>
+          <button type="button" class="float-preset-chip" data-secs="1800">30m 🎮</button>
+          <button type="button" class="float-preset-chip" data-secs="3600">1 ชม. 🌙</button>
+        </div>
+
+        <!-- Custom minutes input option -->
+        <div class="float-custom-time-row">
+          <label class="float-field-label" style="margin: 0; font-size: 0.8rem;">หรือระบุ:</label>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="number" id="float-custom-mins" min="1" max="720" value="5" class="float-min-input">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">นาที</span>
+          </div>
+        </div>
+
+        <label class="float-field-label" style="margin-top: 8px;">เลือกแท็กแจ้งเตือนใคร:</label>
+        <select id="float-mention-select" class="float-select">
+          <option value="fresh">💖 แฟน (เฟรช) — &lt;@1198602938109657199&gt;</option>
+          <option value="best">🐱 ตัวเอง (เบส) — &lt;@604625807687680020&gt;</option>
+          <option value="both">👥 ทั้งคู่ (@everyone)</option>
+          <option value="none">🔕 ไม่แท็กใคร (ส่งเฉพาะการ์ด)</option>
+        </select>
+
+        <label class="float-field-label" style="margin-top: 8px;">ข้อความเตือนความจำ:</label>
+        <input type="text" id="float-message-input" class="float-input" placeholder="พิมพ์ข้อความเตือน..." value="ต้มมาม่าเสร็จแล้วน้าา 🍜">
+
+        <button type="button" id="float-start-btn" class="btn btn-primary float-start-btn" style="margin-top: 12px;">
+          <i class="fa-solid fa-play"></i> เริ่มจับเวลา & ซิงก์ Cloud 🚀
+        </button>
+      </div>
+    </div>
+
+    <!-- Floating Action Button (FAB) -->
+    <button type="button" class="floating-timer-fab" id="floating-timer-fab" title="จับเวลาเตือนความจำ">
+      <div class="fab-pulse-ring" id="fab-pulse-ring"></div>
+      <div class="fab-icon-wrapper">
+        <i class="fa-solid fa-stopwatch" id="fab-icon"></i>
+      </div>
+      <!-- Live mini countdown pill (shown when running) -->
+      <span class="fab-mini-pill" id="fab-mini-pill" style="display: none;">00:00</span>
+    </button>
   </div>
 
   <!-- Toast Notification Container -->
