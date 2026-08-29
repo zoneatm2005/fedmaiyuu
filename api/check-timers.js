@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_FKlGbWAjQ5o-FoJT029OHQ_Gi2GC_D3';
   const TIMER_WEBHOOK_URL =
     process.env.DISCORD_TIMER_WEBHOOK ||
-    'https://discord.com/api/webhooks/1543195278860091485/oTJtvvlo6B37wV0LrGcBv1vCaunHuqfhZEw2sglDyra3TJ_R2GTJ5fbVfkwn788SJRpt';
+    'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
 
   try {
     // 1. Fetch current shared data from Supabase
@@ -81,51 +81,23 @@ export default async function handler(req, res) {
       const durationLabel = durParts.join(' ');
 
       const embed = {
-        author: {
-          name: '˚ʚ ⏰ Freshmaiyuu Cloud Timer ɞ˚',
-          icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
+        title: '⏰ ‧₊˚ ถึงเวลาที่ตั้งไว้แล้วนะคะ! ˚₊‧ 💕',
+        description: `# 💌 ${activeTimer.message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}`,
+        color: 0xF472B6,
+        thumbnail: {
+          url: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'
         },
-        title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
-        description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${activeTimer.message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-        color: 0xFF6584,
-        fields: [
-          {
-            name: '⏱️ **ระยะเวลาที่จับ**',
-            value: `> ⏳ **${durationLabel}**`,
-            inline: true
-          },
-          {
-            name: '👤 **แจ้งเตือนถึง**',
-            value: `> ${mentionLabel}`,
-            inline: true
-          },
-          {
-            name: '⏰ **เวลาที่เริ่มจับ**',
-            value: `> 🕒 \`${activeTimer.startTimeStr || 'ไม่ระบุ'}\``,
-            inline: false
-          },
-          {
-            name: '🔔 **เวลาที่ครบกำหนด**',
-            value: `> ✨ \`${activeTimer.endTimeStr || 'ครบกำหนด'}\``,
-            inline: false
-          },
-          {
-            name: '☁️ **ระบบส่งแจ้งเตือน**',
-            value: `> 🌐 Cloud Server Background Worker (ส่งแม้ย่อ/ปิดเว็บ)`,
-            inline: true
-          }
-        ],
         footer: {
-          text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
-          icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          text: `⏳ ครบเวลา ${durationLabel} • Freshmaiyuu 💕`,
+          icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
         },
         timestamp: new Date().toISOString()
       };
 
       const discordPayload = {
-        username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
-        avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-        content: mentionText ? `${mentionText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
+        username: '˚ʚ 💌 แจ้งเตือนจับเวลา (Freshmaiyuu) ɞ˚',
+        avatar_url: 'https://cdn-icons-png.flaticon.com/512/9908/9908332.png',
+        content: mentionText ? `${mentionText} ⏰ **${activeTimer.message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**` : `⏰ **${activeTimer.message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**`,
         embeds: [embed]
       };
 

@@ -78,52 +78,37 @@ export default async function handler(req, res) {
     const displayStart = startTime || currentFormattedTime;
     const displayEnd = endTime || currentFormattedTime;
 
+    let finalDurationLabel = durationLabel;
+    if ((!finalDurationLabel || finalDurationLabel === 'ไม่ระบุระยะเวลา') && body.totalSeconds > 0) {
+      const s = Math.max(0, Math.floor(body.totalSeconds));
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = s % 60;
+      const parts = [];
+      if (hrs > 0) parts.push(`${hrs} ชั่วโมง`);
+      if (mins > 0) parts.push(`${mins} นาที`);
+      if (secs > 0 || parts.length === 0) parts.push(`${secs} วินาที`);
+      finalDurationLabel = parts.join(' ');
+    }
+
     const embed = {
-      author: {
-        name: '˚ʚ ⏰ Freshmaiyuu Timer & Reminder ɞ˚',
-        icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
+      title: '⏰ ‧₊˚ ถึงเวลาที่ตั้งไว้แล้วนะคะ! ˚₊‧ 💕',
+      description: `# 💌 ${message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}`,
+      color: 0xF472B6,
+      thumbnail: {
+        url: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'
       },
-      title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
-      description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${message}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-      color: 0xFF6584, // Romantic Sweet Pink
-      fields: [
-        {
-          name: '⏱️ **ระยะเวลาที่จับ**',
-          value: `> ⏳ **${durationLabel}**${presetName ? ` (${presetName})` : ''}`,
-          inline: true
-        },
-        {
-          name: '👤 **แจ้งเตือนถึง**',
-          value: `> ${mentionLabel}`,
-          inline: true
-        },
-        {
-          name: '⏰ **เวลาที่เริ่มจับ**',
-          value: `> 🕒 \`${displayStart}\``,
-          inline: false
-        },
-        {
-          name: '🔔 **เวลาที่ครบกำหนด**',
-          value: `> ✨ \`${displayEnd}\``,
-          inline: false
-        },
-        {
-          name: '📱 **อุปกรณ์ที่ตั้งเตือน**',
-          value: `> ${device}`,
-          inline: true
-        }
-      ],
       footer: {
-        text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
-        icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+        text: `⏳ ครบเวลา ${finalDurationLabel} • Freshmaiyuu 💕`,
+        icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
       },
       timestamp: new Date().toISOString()
     };
 
     const discordPayload = {
-      username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
-      avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-      content: mentionText ? `${mentionText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
+      username: '˚ʚ 💌 แจ้งเตือนจับเวลา (Freshmaiyuu) ɞ˚',
+      avatar_url: 'https://cdn-icons-png.flaticon.com/512/9908/9908332.png',
+      content: mentionText ? `${mentionText} ⏰ **${message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**` : `⏰ **${message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**`,
       embeds: [embed]
     };
 

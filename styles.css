@@ -3642,20 +3642,20 @@ select:focus {
 
 .float-running-actions {
   display: flex;
-  gap: 6px;
-  margin-top: 4px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .float-running-actions .btn {
   flex: 1;
-  padding: 8px 4px;
-  font-size: 0.8rem;
+  padding: 10px 12px;
+  font-size: 0.88rem;
   font-weight: 600;
   border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
 }
 
