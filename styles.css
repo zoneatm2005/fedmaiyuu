@@ -3932,16 +3932,20 @@ textarea {
   transition: background 0.35s ease, background-color 0.35s ease, border-color 0.35s ease, color 0.35s ease, box-shadow 0.35s ease;
 }
 
-/* Dark Mode Specific Component Overrides */
+/* ==========================================================================
+   ROMANTIC DARK THEME (MIDNIGHT SAKURA 🌙🌸) - COMPLETE HIGH-CONTRAST SYSTEM
+   ========================================================================== */
+
+/* 1. Header & Controls */
 [data-theme="dark"] .header-bar {
-  background: rgba(26, 17, 36, 0.85);
-  border-color: rgba(255, 180, 205, 0.18);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  background: rgba(22, 14, 30, 0.9) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
 [data-theme="dark"] .logo-text {
-  color: #ff7597;
-  text-shadow: 0 0 15px rgba(255, 117, 151, 0.35);
+  color: #ff7597 !important;
+  text-shadow: 0 0 15px rgba(255, 117, 151, 0.4) !important;
 }
 
 [data-theme="dark"] #cloud-sync-status {
@@ -3949,16 +3953,460 @@ textarea {
 }
 
 [data-theme="dark"] .btn-secondary {
-  background: rgba(45, 30, 58, 0.85);
-  color: #fdf2f8;
-  border-color: rgba(255, 180, 205, 0.2);
+  background: rgba(45, 30, 58, 0.9) !important;
+  color: #fdf2f8 !important;
+  border-color: rgba(255, 180, 205, 0.22) !important;
 }
 
 [data-theme="dark"] .btn-secondary:hover {
-  background: rgba(65, 45, 82, 0.95);
-  color: #ff7597;
-  border-color: #ff7597;
-  box-shadow: 0 0 15px rgba(255, 117, 151, 0.25);
+  background: rgba(70, 48, 88, 0.95) !important;
+  color: #ff7597 !important;
+  border-color: #ff7597 !important;
+  box-shadow: 0 0 15px rgba(255, 117, 151, 0.3) !important;
+}
+
+/* 2. Navigation Tabs */
+[data-theme="dark"] .nav-tab {
+  background: rgba(36, 24, 48, 0.8) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+  color: #d8b4e2 !important;
+}
+
+[data-theme="dark"] .nav-tab:hover {
+  background: rgba(58, 38, 76, 0.95) !important;
+  color: #ff7597 !important;
+  border-color: rgba(255, 117, 151, 0.4) !important;
+}
+
+[data-theme="dark"] .nav-tab.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 20px rgba(255, 117, 151, 0.45) !important;
+}
+
+/* 3. Hero Card & Love Counter (Tab 1: You & Me) */
+[data-theme="dark"] .hero-card {
+  background: rgba(28, 18, 38, 0.9) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .names-heading {
+  color: #ffffff !important;
+  text-shadow: 0 0 20px rgba(255, 117, 151, 0.4) !important;
+}
+
+[data-theme="dark"] .anniversary-date {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .counter-box {
+  background: rgba(42, 28, 56, 0.85) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.22) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .counter-val {
+  color: #ff7597 !important;
+  text-shadow: 0 0 18px rgba(255, 117, 151, 0.5) !important;
+}
+
+[data-theme="dark"] .counter-label {
+  color: #d1c4e9 !important;
+}
+
+[data-theme="dark"] .quote-box {
+  background: rgba(42, 28, 56, 0.65) !important;
+  border: 1px dashed rgba(255, 180, 205, 0.3) !important;
+  color: #fdf2f8 !important;
+}
+
+/* 4. Special Annual Dates & Countdown Cards */
+[data-theme="dark"] .special-dates-section {
+  color: #fdf2f8 !important;
+}
+
+[data-theme="dark"] .special-dates-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .special-dates-subtitle {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .special-date-card {
+  background: rgba(34, 22, 46, 0.9) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .special-date-card:hover {
+  background: rgba(46, 30, 62, 0.95) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 10px 28px rgba(255, 117, 151, 0.3) !important;
+}
+
+[data-theme="dark"] .special-date-name {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .special-date-daytext {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .special-date-icon {
+  background: rgba(50, 32, 65, 0.9) !important;
+  border: 1px solid rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .special-date-bottom {
+  border-top-color: rgba(255, 180, 205, 0.16) !important;
+}
+
+[data-theme="dark"] .special-date-countdown-badge {
+  background: rgba(55, 35, 70, 0.9) !important;
+  color: #ff7597 !important;
+  border-color: rgba(255, 180, 205, 0.25) !important;
+}
+
+[data-theme="dark"] .special-date-arrow {
+  color: #ff7597 !important;
+}
+
+/* 5. You & Me Stats Cards */
+[data-theme="dark"] .youme-stat-card {
+  background: rgba(34, 22, 46, 0.9) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .youme-stat-card:hover {
+  background: rgba(48, 32, 65, 0.95) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 10px 28px rgba(255, 117, 151, 0.25) !important;
+}
+
+[data-theme="dark"] .stat-icon {
+  background: rgba(50, 32, 65, 0.9) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.2) !important;
+}
+
+[data-theme="dark"] .stat-num {
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .stat-arrow {
+  color: #c7b8cf !important;
+}
+
+/* 6. Gallery Toolbar & Inputs */
+[data-theme="dark"] .gallery-toolbar {
+  background: rgba(28, 18, 38, 0.9) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .filter-label {
+  color: #fdf2f8 !important;
+}
+
+[data-theme="dark"] .gallery-date-input,
+[data-theme="dark"] .gallery-sort-select {
+  background: #2b1c38 !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.28) !important;
+}
+
+[data-theme="dark"] .gallery-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.3);
+}
+
+[data-theme="dark"] .gallery-sort-select option {
+  background: #1e1327;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .gallery-count-badge {
+  background: rgba(52, 34, 68, 0.9) !important;
+  color: #ff7597 !important;
+  border-color: rgba(255, 180, 205, 0.25) !important;
+}
+
+[data-theme="dark"] .filter-chip {
+  background: rgba(38, 24, 50, 0.8) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+  color: #d8b4e2 !important;
+}
+
+[data-theme="dark"] .filter-chip:hover {
+  background: rgba(60, 40, 80, 0.95) !important;
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .filter-chip.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+/* 7. Gallery Polaroid Cards */
+[data-theme="dark"] .polaroid-card {
+  background: rgba(32, 20, 44, 0.95) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.2) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .polaroid-card::before {
+  background: rgba(70, 45, 90, 0.6) !important;
+  border-color: rgba(255, 180, 205, 0.3) !important;
+}
+
+[data-theme="dark"] .polaroid-img-wrapper {
+  background: #180f22 !important;
+}
+
+[data-theme="dark"] .polaroid-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .polaroid-date {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .polaroid-tag {
+  background: rgba(255, 117, 151, 0.2) !important;
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .action-btn {
+  background: rgba(50, 32, 65, 0.95) !important;
+  color: #ff7597 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .pagination-wrapper {
+  background: rgba(28, 18, 38, 0.9) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+}
+
+[data-theme="dark"] .page-btn {
+  background: rgba(45, 30, 58, 0.8) !important;
+  color: #d8b4e2 !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+}
+
+[data-theme="dark"] .page-btn.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+/* 8. Calendar & Daily Diary */
+[data-theme="dark"] .calendar-wrapper-card {
+  background: rgba(26, 16, 36, 0.92) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.22) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55) !important;
+}
+
+[data-theme="dark"] .calendar-header-bar {
+  border-bottom-color: rgba(255, 180, 205, 0.18) !important;
+}
+
+[data-theme="dark"] .cal-month-title {
+  color: #ffffff !important;
+  text-shadow: 0 0 15px rgba(255, 117, 151, 0.3) !important;
+}
+
+[data-theme="dark"] .cal-nav-btn {
+  background: rgba(45, 30, 58, 0.9) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 180, 205, 0.22) !important;
+}
+
+[data-theme="dark"] .cal-nav-btn:hover {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .weekday-header {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .weekday-header.sunday {
+  color: #ff6b6b !important;
+}
+
+[data-theme="dark"] .weekday-header.saturday {
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .cal-day-cell {
+  background: rgba(36, 24, 48, 0.85) !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.15) !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3) !important;
+  color: #fdf2f8 !important;
+}
+
+[data-theme="dark"] .cal-day-cell:hover {
+  background: rgba(50, 34, 66, 0.95) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 8px 22px rgba(255, 117, 151, 0.3) !important;
+}
+
+[data-theme="dark"] .cal-day-number {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cal-day-cell.sunday .cal-day-number {
+  color: #ff6b6b !important;
+}
+
+[data-theme="dark"] .cal-day-cell.saturday .cal-day-number {
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .cal-day-cell.other-month {
+  background: rgba(18, 11, 26, 0.45) !important;
+  border-color: transparent !important;
+}
+
+[data-theme="dark"] .cal-day-cell.other-month .cal-day-number {
+  color: rgba(199, 184, 207, 0.3) !important;
+}
+
+[data-theme="dark"] .cal-day-cell.today {
+  background: linear-gradient(180deg, rgba(65, 30, 75, 0.95) 0%, rgba(42, 20, 55, 0.95) 100%) !important;
+  border: 2px solid var(--primary) !important;
+  box-shadow: 0 0 16px rgba(255, 117, 151, 0.4) !important;
+}
+
+[data-theme="dark"] .cal-day-cell.today .cal-day-number {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .cal-day-cell.anniversary-day {
+  background: linear-gradient(135deg, rgba(70, 25, 65, 0.9) 0%, rgba(45, 18, 50, 0.9) 100%) !important;
+  border: 1.5px solid #f472b6 !important;
+}
+
+[data-theme="dark"] .cal-day-cell.birthday-day {
+  background: linear-gradient(135deg, rgba(75, 45, 20, 0.9) 0%, rgba(50, 25, 35, 0.9) 100%) !important;
+  border: 1.5px solid #ffb300 !important;
+  box-shadow: 0 3px 12px rgba(255, 179, 0, 0.25) !important;
+}
+
+[data-theme="dark"] .cal-day-cell.birthday-day .cal-day-number {
+  color: #ffb74d !important;
+}
+
+[data-theme="dark"] .cal-entry-chip {
+  background: rgba(55, 35, 72, 0.95) !important;
+  color: #ffffff !important;
+  border-left-color: var(--primary) !important;
+}
+
+[data-theme="dark"] .cal-entry-chip.food {
+  background: rgba(70, 45, 15, 0.95) !important;
+  color: #ffd54f !important;
+  border-left-color: #ffa000 !important;
+}
+
+[data-theme="dark"] .cal-entry-chip.trip {
+  background: rgba(20, 48, 80, 0.95) !important;
+  color: #90caf9 !important;
+  border-left-color: #2196f3 !important;
+}
+
+[data-theme="dark"] .cal-entry-chip.movie {
+  background: rgba(60, 25, 80, 0.95) !important;
+  color: #e1bee7 !important;
+  border-left-color: #ab47bc !important;
+}
+
+[data-theme="dark"] .cal-entry-chip.special {
+  background: rgba(75, 20, 55, 0.95) !important;
+  color: #f8bbd0 !important;
+  border-left-color: #e91e63 !important;
+}
+
+[data-theme="dark"] .cal-entry-chip.birthday {
+  background: rgba(75, 40, 15, 0.95) !important;
+  color: #ffb74d !important;
+  border-left-color: #ff9800 !important;
+}
+
+[data-theme="dark"] .cal-photo-chip {
+  background: rgba(255, 117, 151, 0.2) !important;
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .cal-more-entries {
+  color: #d1c4e9 !important;
+}
+
+[data-theme="dark"] .cal-legend-bar {
+  border-top-color: rgba(255, 180, 205, 0.18) !important;
+}
+
+[data-theme="dark"] .legend-item {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .stamp-badge {
+  background: rgba(45, 30, 58, 0.9) !important;
+  border-color: var(--primary) !important;
+  color: #ff7597 !important;
+}
+
+/* 9. Bucket List (Tab 3) */
+[data-theme="dark"] .bucket-item {
+  background: rgba(34, 22, 46, 0.9) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="dark"] .bucket-item:hover {
+  background: rgba(48, 32, 65, 0.95) !important;
+  border-color: var(--primary) !important;
+}
+
+[data-theme="dark"] .bucket-text {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .bucket-item.completed {
+  background: rgba(22, 14, 30, 0.6) !important;
+  border-color: rgba(255, 180, 205, 0.1) !important;
+}
+
+[data-theme="dark"] .bucket-item.completed .bucket-text {
+  color: rgba(253, 242, 248, 0.45) !important;
+}
+
+/* 10. Modals & Forms */
+[data-theme="dark"] .modal-box {
+  background: #1a1024 !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.25) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+  color: #fdf2f8 !important;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom-color: rgba(255, 180, 205, 0.18) !important;
+}
+
+[data-theme="dark"] .modal-header h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .form-group label {
+  color: #fdf2f8 !important;
 }
 
 [data-theme="dark"] input[type="text"],
@@ -3967,187 +4415,207 @@ textarea {
 [data-theme="dark"] input[type="number"],
 [data-theme="dark"] textarea,
 [data-theme="dark"] select {
-  background: rgba(22, 14, 30, 0.85);
-  border-color: rgba(255, 180, 205, 0.2);
-  color: #fdf2f8;
+  background: #251833 !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.25) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.3);
+  cursor: pointer;
 }
 
 [data-theme="dark"] input:focus,
 [data-theme="dark"] textarea:focus,
 [data-theme="dark"] select:focus {
-  background: rgba(30, 18, 42, 0.95);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(255, 117, 151, 0.25);
+  background: #2e1e40 !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 4px rgba(255, 117, 151, 0.3) !important;
 }
 
-[data-theme="dark"] .nav-tab {
-  background: rgba(36, 24, 48, 0.7);
-  border-color: rgba(255, 180, 205, 0.15);
-  color: #c7b8cf;
+[data-theme="dark"] .dropzone {
+  background: rgba(34, 22, 46, 0.7) !important;
+  border-color: rgba(255, 180, 205, 0.28) !important;
+  color: #c7b8cf !important;
 }
 
-[data-theme="dark"] .nav-tab:hover {
-  background: rgba(55, 38, 72, 0.9);
-  color: #ff7597;
-  border-color: rgba(255, 117, 151, 0.4);
+[data-theme="dark"] .dropzone:hover {
+  background: rgba(50, 32, 68, 0.9) !important;
+  border-color: var(--primary) !important;
 }
 
-[data-theme="dark"] .nav-tab.active {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
-  color: white;
-  border-color: transparent;
-  box-shadow: 0 6px 20px rgba(255, 117, 151, 0.4);
+[data-theme="dark"] .mood-chip {
+  background: rgba(45, 30, 58, 0.85) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+  color: #ffffff !important;
 }
 
-[data-theme="dark"] .hero-card {
-  background: rgba(30, 20, 42, 0.85);
-  border-color: rgba(255, 180, 205, 0.2);
+[data-theme="dark"] .mood-chip.active {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
 }
 
-[data-theme="dark"] .counter-unit-box {
-  background: rgba(42, 28, 56, 0.8);
-  border-color: rgba(255, 180, 205, 0.18);
+[data-theme="dark"] .cal-modal-entry-card {
+  background: rgba(38, 25, 52, 0.85) !important;
+  border: 1px solid rgba(255, 180, 205, 0.18) !important;
+  color: #fdf2f8 !important;
 }
 
-[data-theme="dark"] .counter-num {
-  color: #ff7597;
-  text-shadow: 0 0 16px rgba(255, 117, 151, 0.4);
+[data-theme="dark"] .cal-modal-entry-title {
+  color: #ffffff !important;
 }
 
-[data-theme="dark"] .anniversary-badge {
-  background: rgba(255, 117, 151, 0.15);
-  border-color: rgba(255, 117, 151, 0.35);
-  color: #ff7597;
+[data-theme="dark"] .cal-modal-entry-content {
+  color: #d8b4e2 !important;
 }
 
-[data-theme="dark"] .youme-stat-card {
-  background: rgba(34, 22, 46, 0.8);
-  border-color: rgba(255, 180, 205, 0.16);
+[data-theme="dark"] .cal-entry-form-container {
+  background: rgba(32, 20, 44, 0.85) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
 }
 
-[data-theme="dark"] .photo-card,
-[data-theme="dark"] .story-card,
-[data-theme="dark"] .memory-card,
-[data-theme="dark"] .bucket-item {
-  background: rgba(32, 21, 44, 0.85);
-  border-color: rgba(255, 180, 205, 0.16);
+[data-theme="dark"] .cal-greeting-box {
+  background: rgba(38, 25, 52, 0.85) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
 }
 
-[data-theme="dark"] .filter-chip {
-  background: rgba(45, 30, 58, 0.75);
-  border-color: rgba(255, 180, 205, 0.18);
-  color: #c7b8cf;
+[data-theme="dark"] .cal-greeting-text {
+  color: #fdf2f8 !important;
 }
 
-[data-theme="dark"] .calendar-container {
-  background: rgba(30, 20, 42, 0.85);
-  border-color: rgba(255, 180, 205, 0.18);
+[data-theme="dark"] .cal-today-celebrate-banner {
+  background: linear-gradient(135deg, rgba(65, 20, 60, 0.95), rgba(40, 15, 45, 0.95)) !important;
+  border-color: #ff7597 !important;
+  color: #ffffff !important;
 }
 
-[data-theme="dark"] .calendar-day {
-  background: rgba(38, 26, 52, 0.65);
-  border-color: rgba(255, 180, 205, 0.12);
-  color: #fdf2f8;
-}
-
-[data-theme="dark"] .calendar-day.other-month {
-  background: rgba(20, 13, 28, 0.4);
-  color: rgba(199, 184, 207, 0.35);
-}
-
-[data-theme="dark"] .calendar-day.today {
-  border-color: #ff7597;
-  box-shadow: 0 0 15px rgba(255, 117, 151, 0.3);
-}
-
-[data-theme="dark"] .modal-box {
-  background: rgba(26, 17, 36, 0.96);
-  border-color: rgba(255, 180, 205, 0.22);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-}
-
-[data-theme="dark"] .timer-modal-message-card {
-  background: rgba(40, 26, 54, 0.75);
-  border-color: rgba(255, 180, 205, 0.18);
-}
-
-[data-theme="dark"] .meta-item {
-  background: rgba(40, 26, 54, 0.6);
-  border-color: rgba(255, 180, 205, 0.15);
-}
-
+/* 11. Floating Timer & Timer Alert Modal */
 [data-theme="dark"] .floating-timer-panel {
-  background: rgba(26, 17, 36, 0.96);
-  border-color: rgba(255, 180, 205, 0.22);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+  background: rgba(26, 17, 36, 0.97) !important;
+  border-color: rgba(255, 180, 205, 0.25) !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.7) !important;
 }
 
 [data-theme="dark"] .float-preset-chip {
-  background: rgba(45, 30, 58, 0.8);
-  border-color: rgba(255, 180, 205, 0.18);
-  color: #fdf2f8;
+  background: rgba(45, 30, 58, 0.85) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .float-preset-chip.active {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .float-mode-btn {
-  background: rgba(38, 26, 50, 0.7);
-  border-color: rgba(255, 180, 205, 0.15);
-  color: #c7b8cf;
+  background: rgba(38, 26, 50, 0.8) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+  color: #d8b4e2 !important;
+}
+
+[data-theme="dark"] .float-mode-btn.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .float-info-card {
-  background: rgba(38, 26, 50, 0.6);
-  border-color: rgba(255, 180, 205, 0.15);
+  background: rgba(38, 26, 50, 0.7) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
 }
 
 [data-theme="dark"] .float-select,
 [data-theme="dark"] .float-input {
-  background: rgba(22, 14, 30, 0.9);
-  border-color: rgba(255, 180, 205, 0.2);
-  color: #fdf2f8;
+  background: #251833 !important;
+  border-color: rgba(255, 180, 205, 0.25) !important;
+  color: #ffffff !important;
 }
 
 [data-theme="dark"] .float-custom-time-row {
-  background: rgba(255, 117, 151, 0.1);
+  background: rgba(255, 117, 151, 0.12) !important;
 }
 
 [data-theme="dark"] .float-min-input {
-  background: rgba(22, 14, 30, 0.9);
-  border-color: rgba(255, 180, 205, 0.25);
-  color: #ff7597;
+  background: #251833 !important;
+  border-color: rgba(255, 180, 205, 0.3) !important;
+  color: #ff7597 !important;
 }
 
+[data-theme="dark"] .timer-modal-message-card {
+  background: rgba(40, 26, 54, 0.85) !important;
+  border-color: rgba(255, 180, 205, 0.2) !important;
+}
+
+[data-theme="dark"] .meta-item {
+  background: rgba(40, 26, 54, 0.7) !important;
+  border-color: rgba(255, 180, 205, 0.18) !important;
+}
+
+/* 12. Lock Screen */
 [data-theme="dark"] .lock-card {
-  background: rgba(26, 17, 36, 0.92);
-  border-color: rgba(255, 180, 205, 0.22);
-  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(255, 117, 151, 0.12);
+  background: rgba(26, 17, 36, 0.94) !important;
+  border-color: rgba(255, 180, 205, 0.25) !important;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.7), 0 0 25px rgba(255, 117, 151, 0.15) !important;
 }
 
 [data-theme="dark"] .lock-icon-wrapper {
-  background: linear-gradient(135deg, #2c1638 0%, #462254 100%);
-  box-shadow: 0 8px 25px rgba(255, 117, 151, 0.35);
+  background: linear-gradient(135deg, #2c1638 0%, #462254 100%) !important;
+  box-shadow: 0 8px 25px rgba(255, 117, 151, 0.4) !important;
+}
+
+[data-theme="dark"] .lock-title {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .lock-subtitle {
+  color: #c7b8cf !important;
 }
 
 [data-theme="dark"] .pin-dot {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 180, 205, 0.3);
+  background: rgba(45, 30, 58, 0.8) !important;
+  border: 2px solid rgba(255, 180, 205, 0.35) !important;
 }
 
 [data-theme="dark"] .pin-dot.filled {
-  background: var(--primary);
-  box-shadow: 0 0 12px var(--primary);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 12px var(--primary) !important;
 }
 
-[data-theme="dark"] .numpad-btn {
-  background: rgba(45, 30, 58, 0.85);
-  color: #fdf2f8;
-  border-color: rgba(255, 180, 205, 0.18);
+[data-theme="dark"] .pin-btn {
+  background: rgba(45, 30, 58, 0.92) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 180, 205, 0.22) !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.35) !important;
 }
 
-[data-theme="dark"] .numpad-btn:hover {
-  background: rgba(65, 45, 82, 0.95);
-  color: #ff7597;
-  border-color: #ff7597;
-  box-shadow: 0 0 15px rgba(255, 117, 151, 0.25);
+[data-theme="dark"] .pin-btn:hover {
+  background: rgba(72, 48, 90, 0.98) !important;
+  color: #ff7597 !important;
+  border-color: #ff7597 !important;
+  box-shadow: 0 0 18px rgba(255, 117, 151, 0.35) !important;
+}
+
+[data-theme="dark"] .pin-btn:active,
+[data-theme="dark"] .pin-btn.pressed {
+  background: rgba(255, 117, 151, 0.25) !important;
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .pin-btn-action {
+  background: rgba(38, 25, 50, 0.85) !important;
+  color: #c7b8cf !important;
+  border-color: rgba(255, 180, 205, 0.16) !important;
+}
+
+[data-theme="dark"] .pin-btn-action:hover {
+  background: rgba(58, 38, 76, 0.95) !important;
+  color: #ff7597 !important;
+}
+
+[data-theme="dark"] .passcode-hint {
+  color: #ff7597 !important;
 }
 
 /* ==========================================================================
