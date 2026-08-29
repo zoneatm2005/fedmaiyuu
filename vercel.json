@@ -5,10 +5,6 @@
     {
       "path": "/api/nightly-reminder",
       "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/check-timers",
-      "schedule": "* * * * *"
     }
   ],
   "routes": [

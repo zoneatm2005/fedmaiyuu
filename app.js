@@ -2801,7 +2801,114 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let floatSelectedSecs = 300; // Default 5 minutes
 
-    // --- 1. Cloud Active Timer Sync Helper ---
+    // --- 1. Cloud Active Timer Sync & QStash Scheduler Helper ---
+    const QSTASH_PUBLISH_URL = 'https://qstash-eu-central-1.upstash.io/v2/publish/';
+    const QSTASH_TOKEN = 'eyJVc2VySUQiOiJiYTc2NWUzMS1kNDY1LTQ1OTgtOTNhZC1jZTJmZDY4ZTY2YWIiLCJQYXNzd29yZCI6IjllOTM3YWVhMzcwZjRhMzZiMjA0MDVjNzI0YjhkM2I1In0=';
+
+    async function scheduleCloudTimerWithQStash(timerData) {
+      try {
+        const res = await fetch('/api/schedule-timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'schedule',
+            totalSeconds: timerData.totalSeconds,
+            message: timerData.message,
+            mentionTarget: timerData.mentionTarget,
+            startTimeStr: timerData.startTimeStr,
+            endTimeStr: timerData.endTimeStr
+          })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.messageId) {
+            timerData.qstashMessageId = json.messageId;
+            try { localStorage.setItem('love_active_timer', JSON.stringify(timerData)); } catch (e) { }
+            saveActiveTimerToCloud(timerData);
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('Vercel schedule-timer fallback to direct QStash:', err);
+      }
+
+      // Direct Client Fallback to QStash REST API
+      try {
+        const mention = getMentionDetails(timerData.mentionTarget);
+        const embed = {
+          author: {
+            name: '˚ʚ ⏰ Freshmaiyuu Cloud Timer ɞ˚',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
+          },
+          title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
+          description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${timerData.message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xFF6584,
+          fields: [
+            { name: '⏱️ **ระยะเวลาที่จับ**', value: `> ⏳ **${formatDurationLabel(timerData.totalSeconds)}**`, inline: true },
+            { name: '👤 **แจ้งเตือนถึง**', value: `> ${mention.label}`, inline: true },
+            { name: '⏰ **เวลาที่เริ่มจับ**', value: `> 🕒 \`${timerData.startTimeStr || 'ไม่ระบุ'}\``, inline: false },
+            { name: '🔔 **เวลาที่ครบกำหนด**', value: `> ✨ \`${timerData.endTimeStr || 'ครบกำหนด'}\``, inline: false },
+            { name: '☁️ **ระบบส่งแจ้งเตือน**', value: `> 🌐 Upstash Cloud Queue (แจ้งเตือนตรงเวลาเป๊ะ แม้ปิดเว็บ/ปิดเครื่อง)`, inline: true }
+          ],
+          footer: {
+            text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          timestamp: new Date().toISOString()
+        };
+
+        const discordPayload = {
+          username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
+          avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
+          content: mention.tagText ? `${mention.tagText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
+          embeds: [embed]
+        };
+
+        const qRes = await fetch(`${QSTASH_PUBLISH_URL}${DISCORD_TIMER_WEBHOOK}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${QSTASH_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Upstash-Delay': `${timerData.totalSeconds}s`,
+            'Upstash-Retries': '3'
+          },
+          body: JSON.stringify(discordPayload)
+        });
+
+        if (qRes.ok) {
+          const qJson = await qRes.json();
+          if (qJson.messageId) {
+            timerData.qstashMessageId = qJson.messageId;
+            try { localStorage.setItem('love_active_timer', JSON.stringify(timerData)); } catch (e) { }
+            saveActiveTimerToCloud(timerData);
+          }
+        }
+      } catch (e) {
+        console.warn('Direct QStash error:', e);
+      }
+    }
+
+    async function cancelCloudTimerWithQStash(messageId) {
+      if (!messageId) return;
+      try {
+        await fetch('/api/schedule-timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel', messageId: messageId })
+        });
+      } catch (e) { }
+
+      try {
+        await fetch(`https://qstash-eu-central-1.upstash.io/v2/messages/${encodeURIComponent(messageId)}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${QSTASH_TOKEN}`
+          }
+        });
+      } catch (e) { }
+    }
+
     async function saveActiveTimerToCloud(state) {
       try {
         if (supabase) {
@@ -2922,11 +3029,28 @@ document.addEventListener('DOMContentLoaded', () => {
           activeTimerState.targetEndTime = Date.now() + activeTimerState.pausedRemaining * 1000;
           const endD = new Date(activeTimerState.targetEndTime);
           activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          // Re-schedule with remaining seconds
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
+          scheduleCloudTimerWithQStash({
+            ...activeTimerState,
+            totalSeconds: activeTimerState.pausedRemaining
+          });
+
           showToast('จับเวลานับต่อแล้ว ⏱️', 'info');
         } else {
           const diffMs = activeTimerState.targetEndTime - Date.now();
           activeTimerState.pausedRemaining = Math.max(0, Math.ceil(diffMs / 1000));
           activeTimerState.isPaused = true;
+
+          // Cancel QStash while paused
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+            activeTimerState.qstashMessageId = null;
+          }
+
           showToast('พักการจับเวลาชั่วคราว ⏸️', 'info');
         }
 
@@ -2937,8 +3061,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (floatAdd1mBtn) {
-      floatAdd1mBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      floatAdd1mBtn.addEventListener('click', () => {
         if (!activeTimerState) return;
         activeTimerState.totalSeconds += 60;
         if (activeTimerState.isPaused) {
@@ -2947,6 +3070,16 @@ document.addEventListener('DOMContentLoaded', () => {
           activeTimerState.targetEndTime += 60 * 1000;
           const endD = new Date(activeTimerState.targetEndTime);
           activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          // Re-schedule QStash with remaining time
+          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
+          scheduleCloudTimerWithQStash({
+            ...activeTimerState,
+            totalSeconds: remainingSecs
+          });
         }
         try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
         saveActiveTimerToCloud(activeTimerState);
@@ -2956,8 +3089,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (floatAdd5mBtn) {
-      floatAdd5mBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+      floatAdd5mBtn.addEventListener('click', () => {
         if (!activeTimerState) return;
         activeTimerState.totalSeconds += 300;
         if (activeTimerState.isPaused) {
@@ -2966,6 +3098,16 @@ document.addEventListener('DOMContentLoaded', () => {
           activeTimerState.targetEndTime += 300 * 1000;
           const endD = new Date(activeTimerState.targetEndTime);
           activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          // Re-schedule QStash with remaining time
+          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
+          scheduleCloudTimerWithQStash({
+            ...activeTimerState,
+            totalSeconds: remainingSecs
+          });
         }
         try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
         saveActiveTimerToCloud(activeTimerState);
@@ -2975,10 +3117,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (floatCancelBtn) {
-      floatCancelBtn.addEventListener('click', (e) => {
+      floatCancelBtn.addEventListener('click', () => {
         e.stopPropagation();
         if (confirm('คุณต้องการยกเลิกการจับเวลานี้ใช่หรือไม่?')) {
           if (timerInterval) clearInterval(timerInterval);
+          if (activeTimerState && activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
           activeTimerState = null;
           try { localStorage.removeItem('love_active_timer'); } catch (e) { }
           saveActiveTimerToCloud(null);
@@ -3019,14 +3164,18 @@ document.addEventListener('DOMContentLoaded', () => {
         presetName: presetName || '',
         isPaused: false,
         isSent: false,
-        pausedRemaining: totalSeconds
+        pausedRemaining: totalSeconds,
+        qstashMessageId: null
       };
 
       try {
         localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState));
       } catch (e) { }
 
-      // Save to Cloud so background worker can trigger Discord even if browser is closed!
+      // Schedule on Upstash Cloud Queue (Exact to the second, works even if web is closed!)
+      scheduleCloudTimerWithQStash(activeTimerState);
+
+      // Save to Supabase Cloud Database for cross-device sync
       saveActiveTimerToCloud(activeTimerState);
 
       renderActiveTimerUI();
@@ -3130,8 +3279,10 @@ document.addEventListener('DOMContentLoaded', () => {
       spawnHeartBurst(window.innerWidth / 2, window.innerHeight / 2, 45);
 
       if (finishedTimer) {
-        // Send Discord Webhook Alert
-        sendTimerDiscordAlert(finishedTimer);
+        // If not scheduled on QStash, send direct webhook fallback
+        if (!finishedTimer.qstashMessageId) {
+          sendTimerDiscordAlert(finishedTimer);
+        }
 
         // Open Alert Modal
         if (modalFinishedMessage) modalFinishedMessage.textContent = `"${finishedTimer.message}"`;
