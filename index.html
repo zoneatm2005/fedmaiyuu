@@ -620,47 +620,73 @@
           <button type="button" id="float-pause-btn" class="btn btn-secondary btn-sm-cute">
             <i class="fa-solid fa-pause"></i> พัก
           </button>
-          <button type="button" id="float-add1m-btn" class="btn btn-secondary btn-sm-cute">
-            +1 นาที
-          </button>
-          <button type="button" id="float-add5m-btn" class="btn btn-secondary btn-sm-cute">
-            +5 นาที
-          </button>
           <button type="button" id="float-cancel-btn" class="btn btn-danger-cute btn-sm-cute">
-            ยกเลิก
+            <i class="fa-solid fa-xmark"></i> ยกเลิก
           </button>
         </div>
       </div>
 
       <!-- State B: Floating Quick Setup View -->
       <div id="float-setup-view">
-        <label class="float-field-label">เลือกเวลานับถอยหลังด่วน:</label>
-        <div class="float-presets-grid" id="float-presets-grid">
-          <button type="button" class="float-preset-chip" data-secs="60">1m ⚡</button>
-          <button type="button" class="float-preset-chip" data-secs="180">3m 🍜</button>
-          <button type="button" class="float-preset-chip active" data-secs="300">5m ☕</button>
-          <button type="button" class="float-preset-chip" data-secs="600">10m 🚿</button>
-          <button type="button" class="float-preset-chip" data-secs="900">15m 🧺</button>
-          <button type="button" class="float-preset-chip" data-secs="1500">25m 🍅</button>
-          <button type="button" class="float-preset-chip" data-secs="1800">30m 🎮</button>
-          <button type="button" class="float-preset-chip" data-secs="3600">1 ชม. 🌙</button>
+        <!-- Floating Mode Tabs -->
+        <div class="float-mode-pills">
+          <button type="button" class="float-mode-btn active" data-mode="countdown" id="float-tab-countdown">
+            <i class="fa-solid fa-hourglass-half"></i> นับถอยหลัง
+          </button>
+          <button type="button" class="float-mode-btn" data-mode="clock" id="float-tab-clock">
+            <i class="fa-solid fa-clock"></i> ถึงกี่โมง
+          </button>
         </div>
 
-        <!-- Custom minutes input option -->
-        <div class="float-custom-time-row">
-          <label class="float-field-label" style="margin: 0; font-size: 0.8rem;">หรือระบุ:</label>
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <input type="number" id="float-custom-mins" min="1" max="720" value="5" class="float-min-input">
-            <span style="font-size: 0.8rem; color: var(--text-muted);">นาที</span>
+        <!-- Section 1: Countdown Mode -->
+        <div id="float-mode-countdown-section">
+          <label class="float-field-label">เลือกเวลานับถอยหลังด่วน:</label>
+          <div class="float-presets-grid" id="float-presets-grid">
+            <button type="button" class="float-preset-chip" data-secs="60">1m ⚡</button>
+            <button type="button" class="float-preset-chip" data-secs="180">3m 🍜</button>
+            <button type="button" class="float-preset-chip active" data-secs="300">5m ☕</button>
+            <button type="button" class="float-preset-chip" data-secs="600">10m 🚿</button>
+            <button type="button" class="float-preset-chip" data-secs="900">15m 🧺</button>
+            <button type="button" class="float-preset-chip" data-secs="1500">25m 🍅</button>
+            <button type="button" class="float-preset-chip" data-secs="1800">30m 🎮</button>
+            <button type="button" class="float-preset-chip" data-secs="3600">1 ชม. 🌙</button>
+          </div>
+
+          <!-- Custom Hours & Minutes Input -->
+          <div class="float-custom-time-row">
+            <label class="float-field-label" style="margin: 0; font-size: 0.8rem;">หรือระบุ:</label>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <input type="number" id="float-custom-hrs" min="0" max="23" value="0" class="float-min-input"
+                style="width: 44px;">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">ชม.</span>
+              <input type="number" id="float-custom-mins" min="0" max="59" value="5" class="float-min-input"
+                style="width: 44px;">
+              <span style="font-size: 0.78rem; color: var(--text-muted);">นาที</span>
+            </div>
+          </div>
+
+          <div id="float-countdown-end-preview" class="float-clock-hint" style="margin-top: 6px; margin-bottom: 2px;">
+            🔔 จะครบเวลาตอน --:-- น.
+          </div>
+        </div>
+
+        <!-- Section 2: Target Clock Time Mode (ระบุกี่โมงกี่นาที) -->
+        <div id="float-mode-clock-section" style="display: none;">
+          <label class="float-field-label">ระบุว่าจะจับเวลาถึงกี่โมง:</label>
+          <div style="margin: 6px 0;">
+            <input type="time" id="float-target-clock-input" class="float-clock-input">
+          </div>
+          <div id="float-clock-preview-hint" class="float-clock-hint">
+            ⏰ จะเตือนเวลา --:-- น.
           </div>
         </div>
 
         <label class="float-field-label" style="margin-top: 8px;">เลือกแท็กแจ้งเตือนใคร:</label>
         <select id="float-mention-select" class="float-select">
-          <option value="fresh">💖 (เฟรช) — &lt;@1198602938109657199&gt;</option>
-          <option value="best">🐱 (เบส) — &lt;@604625807687680020&gt;</option>
+          <option value="fresh">💖 เฟรช</option>
+          <option value="best">🐱 เบส</option>
           <option value="both">👥 ทั้งคู่ (@everyone)</option>
-          <option value="none">🔕 ไม่แท็กใคร (ส่งเฉพาะการ์ด)</option>
+          <option value="none">🔕 ไม่แท็กใคร</option>
         </select>
 
         <label class="float-field-label" style="margin-top: 8px;">ข้อความเตือนความจำ:</label>
@@ -668,7 +694,7 @@
           value="ต้มมาม่าเสร็จแล้วน้าา 🍜">
 
         <button type="button" id="float-start-btn" class="btn btn-primary float-start-btn" style="margin-top: 12px;">
-          <i class="fa-solid fa-play"></i> เริ่มจับเวลา & ซิงก์ Cloud 🚀
+          <i class="fa-solid fa-play"></i> เริ่มจับเวลา🚀
         </button>
       </div>
     </div>

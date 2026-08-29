@@ -2781,15 +2781,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatActiveTarget = document.getElementById('float-active-target');
     const floatRunningStatusText = document.getElementById('float-running-status-text');
     const floatPauseBtn = document.getElementById('float-pause-btn');
-    const floatAdd1mBtn = document.getElementById('float-add1m-btn');
-    const floatAdd5mBtn = document.getElementById('float-add5m-btn');
     const floatCancelBtn = document.getElementById('float-cancel-btn');
     const floatStartBtn = document.getElementById('float-start-btn');
     const floatMentionSelect = document.getElementById('float-mention-select');
     const floatMessageInput = document.getElementById('float-message-input');
     const floatPresetChips = document.querySelectorAll('.float-preset-chip');
+    const floatCustomHrs = document.getElementById('float-custom-hrs');
     const floatCustomMins = document.getElementById('float-custom-mins');
     const floatClosePanelBtn = document.getElementById('float-close-panel-btn');
+
+    // Floating Mode Switcher & Clock Inputs
+    const floatTabCountdown = document.getElementById('float-tab-countdown');
+    const floatTabClock = document.getElementById('float-tab-clock');
+    const floatModeCountdownSection = document.getElementById('float-mode-countdown-section');
+    const floatModeClockSection = document.getElementById('float-mode-clock-section');
+    const floatTargetClockInput = document.getElementById('float-target-clock-input');
+    const floatClockPreviewHint = document.getElementById('float-clock-preview-hint');
+    const floatCountdownEndPreview = document.getElementById('float-countdown-end-preview');
+
+    let currentTimerMode = 'countdown'; // 'countdown' or 'clock'
 
     // Alert Modal Elements
     const timerAlertModal = document.getElementById('timer-alert-modal');
@@ -2816,7 +2826,9 @@ document.addEventListener('DOMContentLoaded', () => {
             message: timerData.message,
             mentionTarget: timerData.mentionTarget,
             startTimeStr: timerData.startTimeStr,
-            endTimeStr: timerData.endTimeStr
+            endTimeStr: timerData.endTimeStr,
+            timerToken: timerData.timerToken,
+            presetName: timerData.presetName
           })
         });
 
@@ -2830,42 +2842,24 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
       } catch (err) {
-        console.warn('Vercel schedule-timer fallback to direct QStash:', err);
+        console.warn('Vercel schedule-timer fallback:', err);
       }
 
-      // Direct Client Fallback to QStash REST API
+      // Client Fallback: Always Route Through Verification Endpoint to Prevent Old/Paused Alerts
       try {
-        const mention = getMentionDetails(timerData.mentionTarget);
-        const embed = {
-          author: {
-            name: '˚ʚ ⏰ Freshmaiyuu Cloud Timer ɞ˚',
-            icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
-          },
-          title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
-          description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${timerData.message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-          color: 0xFF6584,
-          fields: [
-            { name: '⏱️ **ระยะเวลาที่จับ**', value: `> ⏳ **${formatDurationLabel(timerData.totalSeconds)}**`, inline: true },
-            { name: '👤 **แจ้งเตือนถึง**', value: `> ${mention.label}`, inline: true },
-            { name: '⏰ **เวลาที่เริ่มจับ**', value: `> 🕒 \`${timerData.startTimeStr || 'ไม่ระบุ'}\``, inline: false },
-            { name: '🔔 **เวลาที่ครบกำหนด**', value: `> ✨ \`${timerData.endTimeStr || 'ครบกำหนด'}\``, inline: false },
-            { name: '☁️ **ระบบส่งแจ้งเตือน**', value: `> 🌐 Upstash Cloud Queue (แจ้งเตือนตรงเวลาเป๊ะ แม้ปิดเว็บ/ปิดเครื่อง)`, inline: true }
-          ],
-          footer: {
-            text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
-            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
-          },
-          timestamp: new Date().toISOString()
+        const qstashPayload = {
+          action: 'execute',
+          timerToken: timerData.timerToken,
+          totalSeconds: timerData.totalSeconds,
+          message: timerData.message,
+          mentionTarget: timerData.mentionTarget,
+          startTimeStr: timerData.startTimeStr,
+          endTimeStr: timerData.endTimeStr,
+          presetName: timerData.presetName
         };
 
-        const discordPayload = {
-          username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
-          avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-          content: mention.tagText ? `${mention.tagText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
-          embeds: [embed]
-        };
-
-        const qRes = await fetch(`${QSTASH_PUBLISH_URL}${DISCORD_TIMER_WEBHOOK}`, {
+        const targetEndpoint = 'https://fedmaiyuu.vercel.app/api/schedule-timer';
+        const qRes = await fetch(`${QSTASH_PUBLISH_URL}${targetEndpoint}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${QSTASH_TOKEN}`,
@@ -2873,7 +2867,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Upstash-Delay': `${timerData.totalSeconds}s`,
             'Upstash-Retries': '3'
           },
-          body: JSON.stringify(discordPayload)
+          body: JSON.stringify(qstashPayload)
         });
 
         if (qRes.ok) {
@@ -2959,6 +2953,11 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             floatingTimerPanel.classList.add('active');
             floatingTimerFab.classList.add('panel-open');
+            if (currentTimerMode === 'clock') {
+              initDefaultTargetClock();
+            } else {
+              updateCountdownEndPreview();
+            }
           }
         }
       });
@@ -2980,6 +2979,94 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // --- Mode Tabs Switching (Countdown vs Clock) ---
+    function updateClockHint() {
+      if (!floatTargetClockInput || !floatClockPreviewHint) return;
+      const val = floatTargetClockInput.value;
+      if (!val) {
+        floatClockPreviewHint.textContent = '⏰ กรุณาเลือกเวลาที่ต้องการให้เตือน';
+        return;
+      }
+      const [hStr, mStr] = val.split(':');
+      const targetH = parseInt(hStr, 10);
+      const targetM = parseInt(mStr, 10);
+
+      const now = new Date();
+      const targetDate = new Date();
+      targetDate.setHours(targetH, targetM, 0, 0);
+
+      // If target time is already in past today, it's for tomorrow
+      let isTomorrow = false;
+      if (targetDate.getTime() <= now.getTime()) {
+        targetDate.setDate(targetDate.getDate() + 1);
+        isTomorrow = true;
+      }
+
+      const diffSecs = Math.max(1, Math.round((targetDate.getTime() - now.getTime()) / 1000));
+      const hrs = Math.floor(diffSecs / 3600);
+      const mins = Math.floor((diffSecs % 3600) / 60);
+
+      let remainStr = '';
+      if (hrs > 0 && mins > 0) remainStr = `อีก ${hrs} ชม. ${mins} นาที`;
+      else if (hrs > 0) remainStr = `อีก ${hrs} ชั่วโมง`;
+      else remainStr = `อีก ${mins || 1} นาที`;
+
+      const dayPrefix = isTomorrow ? 'พรุ่งนี้ ' : '';
+      floatClockPreviewHint.innerHTML = `⏰ จะแจ้งเตือนเวลา <b>${dayPrefix}${val} น.</b> (${remainStr})`;
+    }
+
+    function initDefaultTargetClock() {
+      if (floatTargetClockInput && !floatTargetClockInput.value) {
+        const d = new Date(Date.now() + 10 * 60 * 1000);
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        floatTargetClockInput.value = `${hh}:${mm}`;
+      }
+      updateClockHint();
+    }
+
+    if (floatTabCountdown && floatTabClock) {
+      floatTabCountdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentTimerMode = 'countdown';
+        floatTabCountdown.classList.add('active');
+        floatTabClock.classList.remove('active');
+        if (floatModeCountdownSection) floatModeCountdownSection.style.display = 'block';
+        if (floatModeClockSection) floatModeClockSection.style.display = 'none';
+      });
+
+      floatTabClock.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentTimerMode = 'clock';
+        floatTabClock.classList.add('active');
+        floatTabCountdown.classList.remove('active');
+        if (floatModeClockSection) floatModeClockSection.style.display = 'block';
+        if (floatModeCountdownSection) floatModeCountdownSection.style.display = 'none';
+        initDefaultTargetClock();
+      });
+    }
+
+    if (floatTargetClockInput) {
+      floatTargetClockInput.addEventListener('input', updateClockHint);
+      floatTargetClockInput.addEventListener('change', updateClockHint);
+    }
+
+    function updateCountdownEndPreview() {
+      if (!floatCountdownEndPreview) return;
+      const now = new Date();
+      const targetDate = new Date(now.getTime() + floatSelectedSecs * 1000);
+      const hh = String(targetDate.getHours()).padStart(2, '0');
+      const mm = String(targetDate.getMinutes()).padStart(2, '0');
+      floatCountdownEndPreview.innerHTML = `🔔 จะจับเวลาถึง <b>${hh}:${mm} น.</b> (${formatDurationLabel(floatSelectedSecs)})`;
+    }
+
+    function updateCountdownSecsFromInputs() {
+      const h = parseInt(floatCustomHrs ? floatCustomHrs.value : '0', 10) || 0;
+      const m = parseInt(floatCustomMins ? floatCustomMins.value : '0', 10) || 0;
+      floatSelectedSecs = Math.max(1, h * 3600 + m * 60);
+      updateCountdownEndPreview();
+    }
+
     // Preset Chips
     floatPresetChips.forEach(chip => {
       chip.addEventListener('click', (e) => {
@@ -2987,20 +3074,31 @@ document.addEventListener('DOMContentLoaded', () => {
         floatPresetChips.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         floatSelectedSecs = parseInt(chip.dataset.secs, 10);
-        if (floatCustomMins) {
-          floatCustomMins.value = Math.max(1, Math.round(floatSelectedSecs / 60));
-        }
+        const h = Math.floor(floatSelectedSecs / 3600);
+        const m = Math.floor((floatSelectedSecs % 3600) / 60);
+        if (floatCustomHrs) floatCustomHrs.value = h;
+        if (floatCustomMins) floatCustomMins.value = m;
+        updateCountdownEndPreview();
       });
     });
 
-    // Custom Minutes Input
+    // Custom Hours & Minutes Input
+    if (floatCustomHrs) {
+      floatCustomHrs.addEventListener('input', () => {
+        floatPresetChips.forEach(c => c.classList.remove('active'));
+        updateCountdownSecsFromInputs();
+      });
+    }
+
     if (floatCustomMins) {
       floatCustomMins.addEventListener('input', () => {
         floatPresetChips.forEach(c => c.classList.remove('active'));
-        const m = parseInt(floatCustomMins.value, 10) || 1;
-        floatSelectedSecs = Math.max(1, m) * 60;
+        updateCountdownSecsFromInputs();
       });
     }
+
+    // Initial countdown preview
+    updateCountdownEndPreview();
 
     // Floating Start Button
     if (floatStartBtn) {
@@ -3009,11 +3107,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const msg = floatMessageInput ? floatMessageInput.value.trim() : 'ต้มมาม่าเสร็จแล้วน้าา 🍜';
         const mention = floatMentionSelect ? floatMentionSelect.value : 'none';
 
+        let targetSecs = floatSelectedSecs;
+        let presetLabel = formatDurationLabel(floatSelectedSecs);
+
+        if (currentTimerMode === 'clock') {
+          if (!floatTargetClockInput || !floatTargetClockInput.value) {
+            showToast('กรุณาระบุเวลาที่ต้องการให้เตือนด้วยครับ', 'error');
+            return;
+          }
+          const [hStr, mStr] = floatTargetClockInput.value.split(':');
+          const targetH = parseInt(hStr, 10);
+          const targetM = parseInt(mStr, 10);
+
+          const now = new Date();
+          const targetDate = new Date();
+          targetDate.setHours(targetH, targetM, 0, 0);
+
+          if (targetDate.getTime() <= now.getTime()) {
+            targetDate.setDate(targetDate.getDate() + 1);
+          }
+
+          targetSecs = Math.max(1, Math.round((targetDate.getTime() - now.getTime()) / 1000));
+          presetLabel = `เวลา ${floatTargetClockInput.value} น.`;
+        } else {
+          updateCountdownSecsFromInputs();
+          targetSecs = floatSelectedSecs;
+          presetLabel = formatDurationLabel(targetSecs);
+        }
+
         startNewTimer({
-          totalSeconds: floatSelectedSecs,
+          totalSeconds: targetSecs,
           message: msg,
           mentionTarget: mention,
-          presetName: formatDurationLabel(floatSelectedSecs)
+          presetName: presetLabel
         });
       });
     }
@@ -3030,7 +3156,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const endD = new Date(activeTimerState.targetEndTime);
           activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
           
-          // Re-schedule with remaining seconds
+          // Re-schedule with new token so old timer alert is discarded
+          const newToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          activeTimerState.timerToken = newToken;
+
           if (activeTimerState.qstashMessageId) {
             cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
           }
@@ -3060,76 +3189,18 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    if (floatAdd1mBtn) {
-      floatAdd1mBtn.addEventListener('click', () => {
-        if (!activeTimerState) return;
-        activeTimerState.totalSeconds += 60;
-        if (activeTimerState.isPaused) {
-          activeTimerState.pausedRemaining += 60;
-        } else {
-          activeTimerState.targetEndTime += 60 * 1000;
-          const endD = new Date(activeTimerState.targetEndTime);
-          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          
-          // Re-schedule QStash with remaining time
-          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
-          if (activeTimerState.qstashMessageId) {
-            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
-          }
-          scheduleCloudTimerWithQStash({
-            ...activeTimerState,
-            totalSeconds: remainingSecs
-          });
-        }
-        try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
-        saveActiveTimerToCloud(activeTimerState);
-        renderActiveTimerUI();
-        showToast('เพิ่มเวลา +1 นาที เรียบร้อยแล้ว ✨', 'info');
-      });
-    }
-
-    if (floatAdd5mBtn) {
-      floatAdd5mBtn.addEventListener('click', () => {
-        if (!activeTimerState) return;
-        activeTimerState.totalSeconds += 300;
-        if (activeTimerState.isPaused) {
-          activeTimerState.pausedRemaining += 300;
-        } else {
-          activeTimerState.targetEndTime += 300 * 1000;
-          const endD = new Date(activeTimerState.targetEndTime);
-          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-          // Re-schedule QStash with remaining time
-          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
-          if (activeTimerState.qstashMessageId) {
-            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
-          }
-          scheduleCloudTimerWithQStash({
-            ...activeTimerState,
-            totalSeconds: remainingSecs
-          });
-        }
-        try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
-        saveActiveTimerToCloud(activeTimerState);
-        renderActiveTimerUI();
-        showToast('เพิ่มเวลา +5 นาที เรียบร้อยแล้ว ✨', 'info');
-      });
-    }
-
     if (floatCancelBtn) {
-      floatCancelBtn.addEventListener('click', () => {
-        e.stopPropagation();
-        if (confirm('คุณต้องการยกเลิกการจับเวลานี้ใช่หรือไม่?')) {
-          if (timerInterval) clearInterval(timerInterval);
-          if (activeTimerState && activeTimerState.qstashMessageId) {
-            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
-          }
-          activeTimerState = null;
-          try { localStorage.removeItem('love_active_timer'); } catch (e) { }
-          saveActiveTimerToCloud(null);
-          renderActiveTimerUI();
-          showToast('ยกเลิกการจับเวลาเรียบร้อยแล้ว ❌', 'info');
+      floatCancelBtn.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        if (timerInterval) clearInterval(timerInterval);
+        if (activeTimerState && activeTimerState.qstashMessageId) {
+          cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
         }
+        activeTimerState = null;
+        try { localStorage.removeItem('love_active_timer'); } catch (err) { }
+        saveActiveTimerToCloud(null);
+        renderActiveTimerUI();
+        showToast('ยกเลิกการจับเวลาเรียบร้อยแล้ว ❌', 'info');
       });
     }
 
@@ -3153,8 +3224,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const startTimeStr = now.toLocaleTimeString('th-TH', timeFormatOptions);
       const endTimeStr = endTime.toLocaleTimeString('th-TH', timeFormatOptions);
 
+      const timerToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
       activeTimerState = {
         id: 'timer-' + Date.now(),
+        timerToken: timerToken,
         totalSeconds: totalSeconds,
         targetEndTime: endTime.getTime(),
         startTimeStr: startTimeStr,

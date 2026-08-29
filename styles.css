@@ -3642,16 +3642,114 @@ select:focus {
 
 .float-running-actions {
   display: flex;
-  gap: 6px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .float-running-actions .btn {
   flex: 1;
-  padding: 7px 10px;
-  font-size: 0.82rem;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-danger-cute {
+  background: rgba(255, 77, 77, 0.12);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 77, 77, 0.35);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-danger-cute:hover {
+  background: #ff3b30;
+  color: #ffffff;
+  border-color: #ff3b30;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.btn-danger-cute:active {
+  transform: translateY(0);
 }
 
 /* Floating Setup View */
+.float-mode-pills {
+  display: flex;
+  background: rgba(255, 107, 139, 0.12);
+  padding: 3px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  gap: 4px;
+}
+
+.float-mode-btn {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-heading);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.float-mode-btn:hover {
+  color: var(--primary);
+}
+
+.float-mode-btn.active {
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(255, 107, 139, 0.25);
+  font-weight: 700;
+}
+
+.float-clock-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(255, 107, 139, 0.35);
+  font-family: 'Kanit', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+  background: #ffffff;
+  outline: none;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+.float-clock-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255, 107, 139, 0.2);
+}
+
+.float-clock-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 6px 0 10px;
+  background: rgba(255, 107, 139, 0.08);
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
 .float-field-label {
   display: block;
   font-size: 0.82rem;
