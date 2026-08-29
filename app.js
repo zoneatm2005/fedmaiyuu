@@ -2700,50 +2700,26 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         const embed = {
           author: {
-            name: '˚ʚ ⏰ Freshmaiyuu Timer & Reminder ɞ˚',
-            icon_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png'
-          },
-          title: '⏰ ‧₊˚ หมดเวลาจับเวลาแล้วน้าาา! ˚₊‧ 💕',
-          description: `> 💌 **ข้อความเตือนความจำ:**\n> ❝ *${timerData.message}* ❞\n\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
-          color: 0xFF6584,
-          fields: [
-            {
-              name: '⏱️ **ระยะเวลาที่จับ**',
-              value: `> ⏳ **${durationLabel}**${timerData.presetName ? ` (${timerData.presetName})` : ''}`,
-              inline: true
-            },
-            {
-              name: '👤 **แจ้งเตือนถึง**',
-              value: `> ${mention.label}`,
-              inline: true
-            },
-            {
-              name: '⏰ **เวลาที่เริ่มจับ**',
-              value: `> 🕒 \`${timerData.startTimeStr}\``,
-              inline: false
-            },
-            {
-              name: '🔔 **เวลาที่ครบกำหนด**',
-              value: `> ✨ \`${timerData.endTimeStr}\``,
-              inline: false
-            },
-            {
-              name: '📱 **อุปกรณ์ที่ตั้งเตือน**',
-              value: `> ${device}`,
-              inline: true
-            }
-          ],
-          footer: {
-            text: '🐾 Freshmaiyuu • Timer & Reminder System 💕',
+            name: '˚ʚ 🌸 OUR SWEET LOVE MEMORY ɞ˚',
             icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
+          },
+          title: '💌 ‧₊˚ 「 ถึงเวลาที่ตั้งไว้แล้วนะคะ! 」 ˚₊‧ 💕',
+          description: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💌 **ข้อความจากใจถึงคนเก่ง:**\n   ❝ **${timerData.message}** ❞\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n⏳ **ระยะเวลาที่จับ:** \`${durationLabel}\`${timerData.presetName ? ` (${timerData.presetName})` : ''}\n🔔 **เวลาครบกำหนด:** \`${timerData.endTimeStr}\` (เริ่ม \`${timerData.startTimeStr}\`)\n👤 **ผู้รับข้อความ:** ${mention.label}\n\n> 🧸 *อย่าลืมพักผ่อน ดื่มน้ำ และยิ้มเยอะๆ นะคะคนดี 💕*\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          color: 0xF472B6,
+          thumbnail: {
+            url: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'
+          },
+          footer: {
+            text: '🐾 Freshmaiyuu • Sweet Love Reminder ✨',
+            icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
           },
           timestamp: new Date().toISOString()
         };
 
         const discordPayload = {
-          username: '₊˚ ⏱️ แจ้งเตือนจับเวลา (Freshmaiyuu) ⏱️ ˚₊',
-          avatar_url: 'https://cdn-icons-png.flaticon.com/512/3669/3669986.png',
-          content: mention.tagText ? `${mention.tagText} ⏰ มีการแจ้งเตือนจับเวลาครบกำหนดแล้วน้าาา!` : '⏰ ครบกำหนดเวลาจับเวลาแล้วน้าาา!',
+          username: '˚ʚ 💌 จดหมายเตือนความจำ (Freshmaiyuu) ɞ˚',
+          avatar_url: 'https://cdn-icons-png.flaticon.com/512/9908/9908332.png',
+          content: mention.tagText ? `${mention.tagText} 🛎️ ‧₊˚ กริ๊งงงง! มีข้อความเตือนความจำถึงเวลาแล้วค่ะ ✨` : '🛎️ ‧₊˚ กริ๊งงงง! มีข้อความเตือนความจำถึงเวลาแล้วค่ะ ✨',
           embeds: [embed]
         };
 
