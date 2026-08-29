@@ -317,13 +317,98 @@ document.addEventListener('DOMContentLoaded', () => {
   const PIN_LENGTH = 6;
   const VALID_PINS = ['020869', '020826', '280469', '280426', '060569', '060526'];
 
+  // --- TOAST NOTIFICATION HELPER ---
+  function showToast(message, type = 'info', duration = 3000) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    let icon = '💖';
+    if (type === 'success') icon = '✨';
+    else if (type === 'error') icon = '🥺';
+    else if (type === 'info') icon = '🌸';
+
+    toast.innerHTML = `<span style="font-size: 1.15rem;">${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 350);
+    }, duration);
+  }
+
+  // ==========================================================================
+  // 0. THEME SWITCHER SYSTEM (LIGHT ☀️ / DARK 🌙)
+  // ==========================================================================
+  function applyTheme(themeName, showFeedback = false) {
+    const isDark = themeName === 'dark';
+    const themeValue = isDark ? 'dark' : 'default';
+
+    document.body.setAttribute('data-theme', themeValue);
+    if (isDark) {
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+    }
+
+    try {
+      localStorage.setItem('love_app_theme', themeName);
+    } catch (e) { }
+
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcon = document.getElementById('theme-icon');
+
+    if (themeIcon) {
+      if (isDark) {
+        themeIcon.className = 'fa-solid fa-sun';
+        if (themeToggleBtn) {
+          themeToggleBtn.setAttribute('title', 'สลับเป็นธีมสว่าง ☀️');
+          themeToggleBtn.setAttribute('aria-label', 'สลับเป็นธีมสว่าง');
+        }
+      } else {
+        themeIcon.className = 'fa-solid fa-moon';
+        if (themeToggleBtn) {
+          themeToggleBtn.setAttribute('title', 'สลับเป็นธีมมืด 🌙');
+          themeToggleBtn.setAttribute('aria-label', 'สลับเป็นธีมมืด');
+        }
+      }
+    }
+
+    if (showFeedback) {
+      showToast(isDark ? 'เปลี่ยนเป็นธีมมืดแล้วค่ะ 🌙💕' : 'เปลี่ยนเป็นธีมสว่างแล้วค่ะ ☀️💕', 'info', 2500);
+    }
+  }
+
+  function initThemeSystem() {
+    let savedTheme = 'light';
+    try {
+      savedTheme = localStorage.getItem('love_app_theme') || 'light';
+    } catch (e) { }
+
+    applyTheme(savedTheme, false);
+
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        const currentTheme = document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(nextTheme, true);
+      });
+    }
+  }
+
   // ==========================================================================
   // 1. INITIALIZATION & PIN PASSCODE UNLOCK LOGIC
   // ==========================================================================
 
   function initApp() {
-    // Apply Default Theme
-    document.body.setAttribute('data-theme', 'default');
+    // Initialize Theme System (Light / Dark)
+    initThemeSystem();
 
     // Set Header Data
     updateCoupleHeader();
