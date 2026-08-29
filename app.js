@@ -2699,27 +2699,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!sent) {
       try {
         const embed = {
-          author: {
-            name: '˚ʚ 🌸 OUR SWEET LOVE MEMORY ɞ˚',
-            icon_url: 'https://cdn-icons-png.flaticon.com/512/2107/2107845.png'
-          },
-          title: '💌 ‧₊˚ 「 ถึงเวลาที่ตั้งไว้แล้วนะคะ! 」 ˚₊‧ 💕',
-          description: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n   💌 **ข้อความจากใจถึงคนเก่ง:**\n   ❝ **${timerData.message}** ❞\n┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n\n⏳ **ระยะเวลาที่จับ:** \`${durationLabel}\`${timerData.presetName ? ` (${timerData.presetName})` : ''}\n🔔 **เวลาครบกำหนด:** \`${timerData.endTimeStr}\` (เริ่ม \`${timerData.startTimeStr}\`)\n👤 **ผู้รับข้อความ:** ${mention.label}\n\n> 🧸 *อย่าลืมพักผ่อน ดื่มน้ำ และยิ้มเยอะๆ นะคะคนดี 💕*\n┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈`,
+          title: '⏰ ‧₊˚ ถึงเวลาที่ตั้งไว้แล้วนะคะ! ˚₊‧ 💕',
+          description: `# 💌 ${timerData.message || 'ครบเวลาที่ตั้งไว้แล้วค่ะ!'}`,
           color: 0xF472B6,
           thumbnail: {
             url: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'
           },
           footer: {
-            text: '🐾 Freshmaiyuu • Sweet Love Reminder ✨',
+            text: `⏳ ครบเวลา ${durationLabel} • Freshmaiyuu 💕`,
             icon_url: 'https://cdn-icons-png.flaticon.com/512/1077/1077035.png'
           },
           timestamp: new Date().toISOString()
         };
 
         const discordPayload = {
-          username: '˚ʚ 💌 จดหมายเตือนความจำ (Freshmaiyuu) ɞ˚',
+          username: '˚ʚ 💌 แจ้งเตือนจับเวลา (Freshmaiyuu) ɞ˚',
           avatar_url: 'https://cdn-icons-png.flaticon.com/512/9908/9908332.png',
-          content: mention.tagText ? `${mention.tagText} 🛎️ ‧₊˚ กริ๊งงงง! มีข้อความเตือนความจำถึงเวลาแล้วค่ะ ✨` : '🛎️ ‧₊˚ กริ๊งงงง! มีข้อความเตือนความจำถึงเวลาแล้วค่ะ ✨',
+          content: mention.tagText ? `${mention.tagText} ⏰ **${timerData.message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**` : `⏰ **${timerData.message || 'ถึงเวลาที่ตั้งไว้แล้วค่ะ!'}**`,
           embeds: [embed]
         };
 
@@ -2757,6 +2753,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatActiveTarget = document.getElementById('float-active-target');
     const floatRunningStatusText = document.getElementById('float-running-status-text');
     const floatPauseBtn = document.getElementById('float-pause-btn');
+    const floatAdd1mBtn = document.getElementById('float-add1m-btn');
+    const floatAdd5mBtn = document.getElementById('float-add5m-btn');
     const floatCancelBtn = document.getElementById('float-cancel-btn');
     const floatStartBtn = document.getElementById('float-start-btn');
     const floatMentionSelect = document.getElementById('float-mention-select');
@@ -3162,6 +3160,68 @@ document.addEventListener('DOMContentLoaded', () => {
         try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
         saveActiveTimerToCloud(activeTimerState);
         renderActiveTimerUI();
+      });
+    }
+
+    if (floatAdd1mBtn) {
+      floatAdd1mBtn.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        if (!activeTimerState) return;
+        activeTimerState.totalSeconds += 60;
+        if (activeTimerState.isPaused) {
+          activeTimerState.pausedRemaining += 60;
+        } else {
+          activeTimerState.targetEndTime += 60 * 1000;
+          const endD = new Date(activeTimerState.targetEndTime);
+          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
+          const newToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          activeTimerState.timerToken = newToken;
+
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
+          scheduleCloudTimerWithQStash({
+            ...activeTimerState,
+            totalSeconds: remainingSecs
+          });
+        }
+        try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
+        saveActiveTimerToCloud(activeTimerState);
+        renderActiveTimerUI();
+        showToast('เพิ่มเวลา +1 นาที เรียบร้อยแล้ว ✨', 'info');
+      });
+    }
+
+    if (floatAdd5mBtn) {
+      floatAdd5mBtn.addEventListener('click', (e) => {
+        if (e) e.stopPropagation();
+        if (!activeTimerState) return;
+        activeTimerState.totalSeconds += 300;
+        if (activeTimerState.isPaused) {
+          activeTimerState.pausedRemaining += 300;
+        } else {
+          activeTimerState.targetEndTime += 300 * 1000;
+          const endD = new Date(activeTimerState.targetEndTime);
+          activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          const remainingSecs = Math.max(1, Math.ceil((activeTimerState.targetEndTime - Date.now()) / 1000));
+          const newToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+          activeTimerState.timerToken = newToken;
+
+          if (activeTimerState.qstashMessageId) {
+            cancelCloudTimerWithQStash(activeTimerState.qstashMessageId);
+          }
+          scheduleCloudTimerWithQStash({
+            ...activeTimerState,
+            totalSeconds: remainingSecs
+          });
+        }
+        try { localStorage.setItem('love_active_timer', JSON.stringify(activeTimerState)); } catch (e) { }
+        saveActiveTimerToCloud(activeTimerState);
+        renderActiveTimerUI();
+        showToast('เพิ่มเวลา +5 นาที เรียบร้อยแล้ว ✨', 'info');
       });
     }
 
