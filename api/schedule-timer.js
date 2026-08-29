@@ -10,7 +10,7 @@ const QSTASH_TOKEN =
 
 const DISCORD_TIMER_WEBHOOK =
   process.env.DISCORD_TIMER_WEBHOOK ||
-  'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
+  'https://discord.com/api/webhooks/1543195278860091485/oTJtvvlo6B37wV0LrGcBv1vCaunHuqfhZEw2sglDyra3TJ_R2GTJ5fbVfkwn788SJRpt';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vqawcettdkjbhmxevyuk.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'sb_publishable_FKlGbWAjQ5o-FoJT029OHQ_Gi2GC_D3';

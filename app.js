@@ -2551,7 +2551,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   // 6. TIMER & DISCORD REMINDER SYSTEM LOGIC (TAB 4)
   // ==========================================================================
-  const DISCORD_TIMER_WEBHOOK = 'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
+  const DISCORD_TIMER_WEBHOOK = 'https://discord.com/api/webhooks/1543195278860091485/oTJtvvlo6B37wV0LrGcBv1vCaunHuqfhZEw2sglDyra3TJ_R2GTJ5fbVfkwn788SJRpt';
 
   let activeTimerState = null;
   let timerInterval = null;
@@ -3127,7 +3127,7 @@ document.addEventListener('DOMContentLoaded', () => {
           activeTimerState.targetEndTime = Date.now() + activeTimerState.pausedRemaining * 1000;
           const endD = new Date(activeTimerState.targetEndTime);
           activeTimerState.endTimeStr = endD.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          
+
           // Re-schedule with new token so old timer alert is discarded
           const newToken = 'tok_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
           activeTimerState.timerToken = newToken;

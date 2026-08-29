@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     const TIMER_WEBHOOK_URL =
       process.env.DISCORD_TIMER_WEBHOOK ||
-      'https://discord.com/api/webhooks/1542138463946543157/UM5j3hKjDxH4pKbzDSXEOnFLGu_jGSD371bok3lP3ruYmUbZ50Di4GPJsmtQax7qxHST';
+      'https://discord.com/api/webhooks/1543195278860091485/oTJtvvlo6B37wV0LrGcBv1vCaunHuqfhZEw2sglDyra3TJ_R2GTJ5fbVfkwn788SJRpt';
 
     // Parse Device Info
     let device = '🌐 อุปกรณ์ทั่วไป';
