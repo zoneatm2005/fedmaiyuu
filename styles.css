@@ -4203,20 +4203,57 @@ textarea {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
-[data-theme="dark"] .pagination-wrapper {
-  background: rgba(28, 18, 38, 0.9) !important;
-  border-color: rgba(255, 180, 205, 0.2) !important;
+[data-theme="dark"] .pagination-wrapper,
+body.dark-theme .pagination-wrapper {
+  background: rgba(28, 18, 38, 0.95) !important;
+  border-color: rgba(255, 180, 205, 0.22) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
-[data-theme="dark"] .page-btn {
-  background: rgba(45, 30, 58, 0.8) !important;
-  color: #d8b4e2 !important;
-  border-color: rgba(255, 180, 205, 0.18) !important;
+[data-theme="dark"] .page-nav-btn,
+[data-theme="dark"] .page-num,
+body.dark-theme .page-nav-btn,
+body.dark-theme .page-num {
+  background: rgba(45, 30, 58, 0.9) !important;
+  color: #fdf2f8 !important;
+  border: 1px solid rgba(255, 180, 205, 0.22) !important;
 }
 
-[data-theme="dark"] .page-btn.active {
+[data-theme="dark"] .page-nav-btn:hover:not(:disabled),
+[data-theme="dark"] .page-num:hover:not(.active),
+body.dark-theme .page-nav-btn:hover:not(:disabled),
+body.dark-theme .page-num:hover:not(.active) {
   background: var(--primary) !important;
   color: #ffffff !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 12px rgba(255, 117, 151, 0.4) !important;
+}
+
+[data-theme="dark"] .page-nav-btn:disabled,
+body.dark-theme .page-nav-btn:disabled {
+  background: rgba(30, 18, 40, 0.5) !important;
+  color: rgba(199, 184, 207, 0.35) !important;
+  border-color: rgba(255, 180, 205, 0.08) !important;
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+}
+
+[data-theme="dark"] .page-num.active,
+body.dark-theme .page-num.active {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 15px rgba(255, 117, 151, 0.5) !important;
+}
+
+[data-theme="dark"] .page-ellipsis,
+body.dark-theme .page-ellipsis {
+  color: #c7b8cf !important;
+}
+
+[data-theme="dark"] .pagination-info-text,
+body.dark-theme .pagination-info-text {
+  color: #c7b8cf !important;
 }
 
 /* 8. Calendar & Daily Diary */
